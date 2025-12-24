@@ -1,0 +1,38 @@
+# Dallas Temperature sensor package
+one_wire:
+  - platform: gpio
+    pin: ${one_wire_pin}
+    id: temp_bus
+
+sensor:
+  - platform: dallas_temp
+    id: air_temperature
+    one_wire_id: temp_bus
+    address: ${air_temp_id}
+    name: Air Temperature
+    #unique_id: air_temperature
+    update_interval: 120s
+
+  - platform: dallas_temp
+    id: water_temperature
+    one_wire_id: temp_bus
+    address: ${water_temp_id}
+    name: Water Temperature
+    #nique_id: water_temperature
+    update_interval: 120s
+
+  - platform: template
+    name: Air Temperature_F
+    id: air_temperature_f
+    #unique_id: air_temperature_f
+    unit_of_measurement: "°F"
+    lambda: return id(air_temperature).state * 9/5+32;
+    update_interval: 5s
+
+  - platform: template
+    name: Water Temperature_F
+    id: water_temperature_f
+    #unique_id: water_temperature_f
+    unit_of_measurement: "°F"
+    lambda: return id(water_temperature).state * 9/5+32;
+    update_interval: 5s

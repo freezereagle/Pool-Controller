@@ -1,0 +1,87 @@
+#external_components:
+#  - source: components/Pool_Automation/components
+#    components: [pentair_if_ic]
+#    refresh: 0s
+
+#uart:
+#  - id: uart_bus
+#    tx_pin: ${pentair_tx_pin}
+#    rx_pin: ${pentair_rx_pin}
+#    baud_rate: 9600
+
+#intellichlor:
+#  id: my_intellichlor
+#  uart_id: uart_bus
+
+sensor:
+  - platform: pentair_if_ic
+    salt_ppm:
+      name: "Salt Level"
+      id: salt_ppm
+    water_temp:
+      name: "Chlorinator Water Temperature"
+      id: water_temp
+    status:
+      name: "Chlorinator Status"
+      id: chlorinator_status
+    error:
+      name: "Chlorinator Error"
+      id: chlorinator_error
+    set_percent:
+      name: "Chlorinator Output %"
+      id: chlorinator_set_percent
+
+binary_sensor:
+  - platform: pentair_if_ic
+    no_flow:
+      name: "No Flow Alarm"
+      id: no_flow_alarm
+    low_salt:
+      name: "Low Salt Alarm"
+      id: low_salt_alarm
+    high_salt:
+      name: "High Salt Alarm"
+      id: high_salt_alarm
+    clean:
+      name: "Clean Cell Required"
+      id: clean_cell_alarm
+    high_current:
+      name: "High Current Alarm"
+      id: high_current_alarm
+    low_volts:
+      name: "Low Voltage Alarm"
+      id: low_voltage_alarm
+    low_temp:
+      name: "Low Temperature Alarm"
+      id: low_temp_alarm
+    check_pcb:
+      name: "Check PCB"
+      id: check_pcb_alarm
+
+text_sensor:
+  - platform: pentair_if_ic
+    version:
+      name: "Chlorinator Version"
+      id: chlorinator_version
+    debug:
+      name: "SWG Debug Info"
+      id: swg_debug
+
+number:
+  - platform: pentair_if_ic
+    swg_percent:
+      name: "Chlorine Output"
+      id: swg_percent_number
+
+switch:
+  - platform: pentair_if_ic
+    takeover_mode:
+      name: "Takeover Mode"
+      id: takeover_mode_switch
+
+button:
+  - platform: template
+    name: "Refresh Chlorinator"
+    on_press:
+      - lambda: |-
+          id(my_pentair).refresh_chlorinator();

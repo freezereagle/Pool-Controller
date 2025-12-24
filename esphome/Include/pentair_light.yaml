@@ -1,0 +1,210 @@
+# Pentair IntelliBrite Architectural Series Pool Light Package
+# This package provides control for IntelliBrite lights through power cycling
+# to select different color modes
+
+# The IntelliBrite light has 14 modes that are cycled by power interruptions:
+# 1. SAm (Color Sync/Show Mode)
+# 2. Party Mode
+# 3. Romance Mode
+# 4. Caribbean Mode
+# 5. American Mode
+# 6. Sunset Mode
+# 7. Royalty Mode
+# 8. Blue
+# 9. Green
+# 10. Red
+# 11. White
+# 12. Magenta
+# 13. Hold
+# 14. Recall
+
+globals:
+  # Track the current color mode (1-14)
+  - id: light_current_mode
+    type: int
+    restore_value: yes
+    initial_value: '1'
+  
+  # Flag to indicate if we're in the middle of cycling
+  - id: light_cycling
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  
+  # Track remaining cycles during script execution
+  - id: light_cycles_remaining
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+# GPIO output for the light relay
+output:
+  - platform: gpio
+    pin: ${pentair_light_pin}
+    id: pentair_light_output
+
+# Main light switch
+switch:
+  - platform: output
+    id: pentair_light_switch
+    name: "Pool Light"
+    output: pentair_light_output
+    restore_mode: RESTORE_DEFAULT_OFF
+    icon: "mdi:lightbulb-on-outline"
+    on_turn_on:
+      - lambda: |-
+          // When turning on, go to the last selected mode
+          if (!id(light_cycling)) {
+            ESP_LOGI("pentair_light", "Light turned on - will be in mode %d", id(light_current_mode));
+          }
+    on_turn_off:
+      - script.stop: light_mode_cycle_script
+      - lambda: |-
+          id(light_cycling) = false;
+          ESP_LOGI("pentair_light", "Light turned off");
+
+# Select component for choosing color modes
+select:
+  - platform: template
+    name: "Pool Light Mode"
+    id: pentair_light_mode
+    icon: "mdi:palette"
+    optimistic: true
+    options:
+      - "SAm (Color Sync)"
+      - "Party"
+      - "Romance"
+      - "Caribbean"
+      - "American"
+      - "Sunset"
+      - "Royalty"
+      - "Blue"
+      - "Green"
+      - "Red"
+      - "White"
+      - "Magenta"
+      - "Hold"
+      - "Recall"
+    set_action:
+      then:
+        - lambda: |-
+            // Find the index of the selected option
+            auto& options = id(pentair_light_mode).traits.get_options();
+            int target_mode = 1;
+            for (int i = 0; i < options.size(); i++) {
+              if (options[i] == x) {
+                target_mode = i + 1;
+                break;
+              }
+            }
+            
+            ESP_LOGI("pentair_light", "Changing to mode: %s (mode %d)", x.c_str(), target_mode);
+            
+            // Store the target mode
+            id(light_mode_target).publish_state(target_mode);
+            
+            // Turn on light if it's off, then start cycling to the absolute mode
+            if (!id(pentair_light_switch).state) {
+              id(pentair_light_switch).turn_on();
+            }
+            
+            // Always start cycling to the absolute target mode
+            id(light_mode_cycle_script).execute();
+
+# Number to track target mode during cycling
+number:
+  - platform: template
+    id: light_mode_target
+    internal: true
+    min_value: 1
+    max_value: 14
+    step: 1
+    optimistic: true
+    initial_value: 1
+
+# Script to cycle through modes to reach target
+script:
+  - id: light_mode_cycle_script
+    mode: restart
+    then:
+      - lambda: |-
+          id(light_cycling) = true;
+          
+          int target = (int)id(light_mode_target).state;
+          
+          ESP_LOGI("pentair_light", "Setting absolute mode %d", target);
+          
+          // To set absolute mode, we need to:
+          // 1. Turn light off for 4+ seconds to reset
+          // 2. Turn back on (returns to previous mode, which is mode 1 after reset)
+          // 3. Then cycle target times to reach the desired mode
+          
+          // Cycles needed = target (since turning on returns to mode 1)
+          int cycles_needed = target;
+          
+          ESP_LOGI("pentair_light", "Will reset, then cycle %d times", cycles_needed);
+          
+          // Store cycles needed in a variable we can access in the while loop
+          id(light_cycles_remaining) = cycles_needed;
+      
+      # Turn light off for 4 seconds to reset to mode 1
+      - output.turn_off: pentair_light_output
+      - delay: 4s
+      
+      # Turn light back on - now in mode 1
+      - output.turn_on: pentair_light_output
+      
+      # Wait for light to be fully on (3 seconds after turn-on)
+      - delay: 3s
+      
+      # Perform the power cycles
+      - while:
+          condition:
+            lambda: 'return id(light_cycles_remaining) > 0;'
+          then:
+            # Turn off for short period (300ms)
+            - output.turn_off: pentair_light_output
+            - delay: 300ms
+            
+            # Turn back on
+            - output.turn_on: pentair_light_output
+            
+            # Wait for mode to stabilize (300ms between cycles)
+            - delay: 300ms
+            
+            - lambda: |-
+                id(light_cycles_remaining)--;
+                ESP_LOGI("pentair_light", "Cycle complete, %d remaining", id(light_cycles_remaining));
+      
+      # Update current mode and finish
+      - lambda: |-
+          id(light_current_mode) = (int)id(light_mode_target).state;
+          id(light_cycling) = false;
+          
+          // Update the select to show current mode
+          auto& options = id(pentair_light_mode).traits.get_options();
+          if (id(light_current_mode) >= 1 && id(light_current_mode) <= options.size()) {
+            id(pentair_light_mode).publish_state(options[id(light_current_mode) - 1]);
+          }
+          
+          ESP_LOGI("pentair_light", "Mode change complete. Now in mode %d", id(light_current_mode));
+
+# Text sensor to show current light status
+text_sensor:
+  - platform: template
+    name: "Pool Light Status"
+    id: pentair_light_status
+    icon: "mdi:information-outline"
+    lambda: |-
+      if (id(light_cycling)) {
+        return std::string("Changing mode...");
+      } else if (id(pentair_light_switch).state) {
+        auto& options = id(pentair_light_mode).traits.get_options();
+        if (id(light_current_mode) >= 1 && id(light_current_mode) <= options.size()) {
+          return std::string("On - ") + options[id(light_current_mode) - 1];
+        }
+        return std::string("On");
+      } else {
+        return std::string("Off");
+      }
+    update_interval: 2s
