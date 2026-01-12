@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pool Controller Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🌊 Pool Controller Dashboard</h1>
+            <div style="font-size: 0.8em; color: #fff; opacity: 0.7; margin-top: 0.5em;">Build: __BUILD_TIMESTAMP__
+            </div>
+            <div id="connection-status" class="status-disconnected" onclick="toggleConfiguration()"
+                style="cursor: pointer;" title="Click to toggle configuration">Disconnected</div>
+        </header>
+
+        <div class="main-grid">
+            <!-- Configuration -->
+            <section class="card" id="configuration-section">
+                <h2>⚙️ Configuration</h2>
+                <div class="form-group">
+                    <label for="host">ESPHome Host:</label>
+                    <input type="text" id="host" value="pool-controller.local" placeholder="pool-controller.local">
+                </div>
+                <div class="form-group">
+                    <label for="port">Port:</label>
+                    <input type="number" id="port" value="80" placeholder="80">
+                </div>
+                <div class="form-group">
+                    <label for="username">Username (optional):</label>
+                    <input type="text" id="username" placeholder="username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password (optional):</label>
+                    <input type="password" id="password" placeholder="password">
+                </div>
+                <button id="connect-btn" class="btn btn-primary">Connect</button>
+                <button id="disconnect-btn" class="btn btn-secondary" disabled>Disconnect</button>
+            </section>
+
+            <!-- Pool Light -->
+            <section class="card card-compact" id="pool-light-section" style="display: none;">
+                <div class="section-header">
+                    <h2>💡 Pool Light</h2>
+                    <button class="btn-icon-refresh" onclick="refreshPoolLight()" title="Refresh"><i
+                            class="mdi mdi-refresh"></i></button>
+                </div>
+                <div class="switches-grid">
+                    <div class="switch-item">
+                        <span>Power</span>
+                        <button id="switch-pool-light" class="btn btn-toggle"
+                            onclick="toggleSwitch('pool_light', this)">-</button>
+                    </div>
+                    <div class="switch-item" style="/* grid-column: 1 / -1; */">
+                        <span>Light Mode:</span>
+                        <select id="light-mode-select" class="select" onchange="setLightMode()">
+                            <option value="">Select mode...</option>
+                            <option value="SAm (Color Sync)">SAm (Color Sync)</option>
+                            <option value="Party">Party</option>
+                            <option value="Romance">Romance</option>
+                            <option value="Caribbean">Caribbean</option>
+                            <option value="American">American</option>
+                            <option value="Sunset">Sunset</option>
+                            <option value="Royalty">Royalty</option>
+                            <option value="Blue">Blue</option>
+                            <option value="Green">Green</option>
+                            <option value="Red">Red</option>
+                            <option value="White">White</option>
+                            <option value="Magenta">Magenta</option>
+                            <option value="Hold">Hold</option>
+                            <option value="Recall">Recall</option>
+                        </select>
+                        <span id="current-light-mode" class="badge" style="margin-left: 10px;">-</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Temperatures -->
+            <section class="card" id="temperatures-section" style="display: none;">
+                <div class="section-header">
+                    <h2>🌡️ Temperatures</h2>
+                    <button class="btn-icon-refresh" onclick="refreshTemperatures()" title="Refresh"><i
+                            class="mdi mdi-refresh"></i></button>
+                </div>
+                <div class="temp-grid grid-3-col">
+                    <div class="temp-item">
+                        <span class="temp-label">Air:</span>
+                        <span class="temp-value" id="air-temp-f">-</span>
+                    </div>
+                    <div class="temp-item">
+                        <span class="temp-label">Pool:</span>
+                        <span class="temp-value" id="pool-temp-f">-</span>
+                    </div>
+                    <div class="temp-item">
+                        <span class="temp-label">iChlor:</span>
+                        <span class="temp-value" id="solar-temp-f">-</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pump Mode -->
+            <section class="card card-compact" id="pump-mode-section" style="display: none;">
+                <div class="section-header">
+                    <h2>🎛️ Pump Mode</h2>
+                    <button class="btn-icon-refresh" onclick="refreshPumpMode()" title="Refresh"><i
+                            class="mdi mdi-refresh"></i></button>
+                </div>
+                <div class="switches-grid">
+                    <div class="switch-item">
+                        <span>Current Mode</span>
+                        <span id="current-mode" class="badge">-</span>
+                    </div>
+                    <div class="switch-item">
+                        <span>Set Mode</span>
+                        <select id="mode-select" class="select" onchange="setPumpMode()">
+                            <option value="">Select mode...</option>
+                            <option value="Auto">Auto</option>
+                            <option value="Off">Off</option>
+                            <option value="Speed 1">Speed 1</option>
+                            <option value="Speed 2">Speed 2</option>
+                            <option value="Speed 3">Speed 3</option>
+                            <option value="Speed 4">Speed 4</option>
+                            <option value="Speed 5">Speed 5</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Switches -->
+            <section class="card card-compact" id="switches-section" style="display: none;">
+                <div class="section-header">
+                    <h2>🔌 Switches</h2>
+                    <button class="btn-icon-refresh" onclick="refreshSwitches()" title="Refresh"><i
+                            class="mdi mdi-refresh"></i></button>
+                </div>
+                <div class="switches-grid grid-2-col">
+                    <div class="switch-item">
+                        <span>Waterfall</span>
+                        <button id="switch-waterfall" class="btn btn-toggle"
+                            onclick="toggleSwitch('waterfall', this)">-</button>
+                    </div>
+                    <div class="switch-item">
+                        <span>Waterfall (Auto)</span>
+                        <button id="switch-waterfall-auto" class="btn btn-toggle"
+                            onclick="toggleSwitch('waterfall__auto_', this)">-</button>
+                    </div>
+                    <div class="switch-item">
+                        <span>Auto Schedule</span>
+                        <button id="switch-auto-schedule" class="btn btn-toggle"
+                            onclick="toggleSwitch('auto_schedule', this)">-</button>
+                    </div>
+                    <div class="switch-item">
+                        <span>Off</span>
+                        <button id="switch-off" class="btn btn-toggle" onclick="toggleSwitch('off', this)">-</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Schedule  -->
+            <section class="card" id="schedule-overview-section" style="display: none;">
+                <div class="section-header">
+                    <h2>📅 Schedule</h2>
+                    <button class="btn-icon-refresh" onclick="refreshScheduleOverview()" title="Refresh"><i
+                            class="mdi mdi-refresh"></i></button>
+                </div>
+                <div class="schedule-overview-table">
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th id="blank-label">-</th>
+                                <th id="start-label">Start</th>
+                                <th id="speed-label">Speed</th>
+                                <th id="rpm-label">RPM</th>
+                                <th id="waterfall-label">Waterfall</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td id="schedule-1-status-tbl">-</td>
+                                <td id="schedule-1-start-tbl" class="editable" onclick="editScheduleStart(1)">-</td>
+                                <td id="schedule-1-speed-tbl" class="editable" onclick="editScheduleSpeed(1)">-</td>
+                                <td id="schedule-1-rpm-tbl">-</td>
+                                <td><span id="schedule-1-waterfall-tbl" class="waterfall-status editable"
+                                        onclick="toggleScheduleWaterfall(1)">-</span></td>
+                            </tr>
+                            <tr>
+                                <td id="schedule-2-status-tbl">-</td>
+                                <td id="schedule-2-start-tbl" class="editable" onclick="editScheduleStart(2)">-</td>
+                                <td id="schedule-2-speed-tbl" class="editable" onclick="editScheduleSpeed(2)">-</td>
+                                <td id="schedule-2-rpm-tbl">-</td>
+                                <td><span id="schedule-2-waterfall-tbl" class="waterfall-status editable"
+                                        onclick="toggleScheduleWaterfall(2)">-</span></td>
+                            </tr>
+                            <tr>
+                                <td id="schedule-3-status-tbl">-</td>
+                                <td id="schedule-3-start-tbl" class="editable" onclick="editScheduleStart(3)">-</td>
+                                <td id="schedule-3-speed-tbl" class="editable" onclick="editScheduleSpeed(3)">-</td>
+                                <td id="schedule-3-rpm-tbl">-</td>
+                                <td><span id="schedule-3-waterfall-tbl" class="waterfall-status editable"
+                                        onclick="toggleScheduleWaterfall(3)">-</span></td>
+                            </tr>
+                            <tr>
+                                <td id="schedule-4-status-tbl">-</td>
+                                <td id="schedule-4-start-tbl" class="editable" onclick="editScheduleStart(4)">-</td>
+                                <td id="schedule-4-speed-tbl" class="editable" onclick="editScheduleSpeed(4)">-</td>
+                                <td id="schedule-4-rpm-tbl">-</td>
+                                <td><span id="schedule-4-waterfall-tbl" class="waterfall-status editable"
+                                        onclick="toggleScheduleWaterfall(4)">-</span></td>
+                            </tr>
+                            <tr>
+                                <td id="schedule-5-status-tbl">-</td>
+                                <td id="schedule-5-start-tbl" class="editable" onclick="editScheduleStart(5)">-</td>
+                                <td id="schedule-5-speed-tbl" class="editable" onclick="editScheduleSpeed(5)">-</td>
+                                <td id="schedule-5-rpm-tbl">-</td>
+                                <td><span id="schedule-5-waterfall-tbl" class="waterfall-status editable"
+                                        onclick="toggleScheduleWaterfall(5)">-</span></td>
+                            </tr>
+                            <!-- Popup for editing schedule start time -->
+                            <div id="schedule-time-popup" class="modal" style="display:none;">
+                                <div class="modal-content">
+                                    <span class="close" onclick="closeScheduleTimePopup()">&times;</span>
+                                    <h3>Edit Start Time</h3>
+                                    <input type="time" id="schedule-time-input">
+                                    <button class="btn btn-primary" onclick="saveScheduleTime()">Save</button>
+                                </div>
+                            </div>
+
+                            <!-- Popup for editing schedule speed -->
+                            <div id="schedule-speed-popup" class="modal" style="display:none;">
+                                <div class="modal-content">
+                                    <span class="close" onclick="closeScheduleSpeedPopup()">&times;</span>
+                                    <h3>Edit Speed</h3>
+                                    <select id="schedule-speed-select">
+                                        <option value="Off">Off</option>
+                                        <option value="Speed 1">Speed 1</option>
+                                        <option value="Speed 2">Speed 2</option>
+                                        <option value="Speed 3">Speed 3</option>
+                                        <option value="Speed 4">Speed 4</option>
+                                        <option value="Speed 5">Speed 5</option>
+                                    </select>
+                                    <button class="btn btn-primary" onclick="saveScheduleSpeed()">Save</button>
+                                </div>
+                            </div>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td id="schedule-off-status-tbl">-</td>
+                                <td id="pump-end-time-tbl" class="editable" onclick="editPumpEndTime()">-</td>
+                                <!-- Popup for editing pump end time -->
+                                <div id="pump-end-time-popup" class="modal" style="display:none;">
+                                    <div class="modal-content">
+                                        <span class="close" onclick="closePumpEndTimePopup()">&times;</span>
+                                        <h3>Edit Pump End Time</h3>
+                                        <input type="time" id="pump-end-time-input">
+                                        <button class="btn btn-primary" onclick="savePumpEndTime()">Save</button>
+                                    </div>
+                                </div>
+                                <td colspan="3"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Pump Status -->
+            <section class="card card-compact" id="pump-status-section" style="display: none;">
+                <div class="section-header">
+                    <h2>💨 Pump Status</h2>
+                    <button class="btn-icon-refresh" onclick="refreshPumpStatus()" title="Refresh"><i
+                            class="mdi mdi-refresh"></i></button>
+                </div>
+                <div class="status-grid grid-2-col">
+                    <div class="status-item">
+                        <span class="label">Running:</span>
+                        <span id="pump-running" class="status-badge">-</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">Status:</span>
+                        <span id="pump-status" class="status-badge">-</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">RPM:</span>
+                        <span id="pump-rpm">-</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">Power:</span>
+                        <span id="pump-power">-</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">Flow:</span>
+                        <span id="pump-flow">-</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">Time Remaining:</span>
+                        <span id="time-remaining">-</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">Pump Clock:</span>
+                        <span id="pump-clock-formatted">-</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">Current Schedule:</span>
+                        <span id="current-schedule">-</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chlorinator -->
+            <section class="card card-compact" id="chlorinator-section" style="display: none;">
+                <div class="section-header">
+                    <h2>🧪 Chlorinator</h2>
+                    <button class="btn-icon-refresh" onclick="refreshChlorinatorAction()" title="Refresh"><i
+                            class="mdi mdi-refresh"></i></button>
+                </div>
+                <div class="info-grid grid-2-col">
+                    <div class="info-item">
+                        <span class="label">Salt Level:</span>
+                        <span id="salt-level">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Status:</span>
+                        <span id="chlorinator-status">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Error:</span>
+                        <span id="chlorinator-error">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Current Output:</span>
+                        <span id="chlorinator-output">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Version:</span>
+                        <span id="chlorinator-version">-</span>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <h3>Set Chlorine Output</h3>
+                    <div class="slider-container">
+                        <input type="range" id="chlorine-slider" min="0" max="100" value="50" class="slider">
+                        <span id="chlorine-value">50</span>%
+                    </div>
+                    <button class="btn btn-primary" onclick="setChlorineOutput()">Set Output</button>
+                </div>
+                <div class="switches-grid"
+                    style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                    <div class="switch-item">
+                        <span>Takeover Mode</span>
+                        <button id="switch-takeover" class="btn btn-toggle"
+                            onclick="toggleSwitch('takeover_mode', this)">-</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Alarms -->
+            <section class="card card-compact" id="alarms-section" style="display: none;">
+                <div class="section-header">
+                    <h2>⚠️ Alarms</h2>
+                    <button class="btn-icon-refresh" onclick="refreshAlarms()" title="Refresh"><i
+                            class="mdi mdi-refresh"></i></button>
+                </div>
+                <div class="alarm-grid grid-4-col no-icons">
+                    <div class="alarm-item" id="alarm-no-flow">
+                        <span class="alarm-icon"></span>
+                        <span>No Flow</span>
+                    </div>
+                    <div class="alarm-item" id="alarm-low-salt">
+                        <span class="alarm-icon"></span>
+                        <span>Low Salt</span>
+                    </div>
+                    <div class="alarm-item" id="alarm-high-salt">
+                        <span class="alarm-icon"></span>
+                        <span>High Salt</span>
+                    </div>
+                    <div class="alarm-item" id="alarm-clean-cell">
+                        <span class="alarm-icon"></span>
+                        <span>Clean Cell Required</span>
+                    </div>
+                    <div class="alarm-item" id="alarm-high-current">
+                        <span class="alarm-icon"></span>
+                        <span>High Current</span>
+                    </div>
+                    <div class="alarm-item" id="alarm-low-voltage">
+                        <span class="alarm-icon"></span>
+                        <span>Low Voltage</span>
+                    </div>
+                    <div class="alarm-item" id="alarm-low-temp">
+                        <span class="alarm-icon"></span>
+                        <span>Low Temperature</span>
+                    </div>
+                    <div class="alarm-item" id="alarm-check-pcb">
+                        <span class="alarm-icon"></span>
+                        <span>Check PCB</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pump Speeds -->
+            <section class="card card-compact" id="pump-speeds-section" style="display: none;">
+                <h2>⚡ Pump Speeds</h2>
+                <div class="speeds-grid">
+                    <div class="speed-control">
+                        <h3>Speed 1</h3>
+                        <div class="spinner-group">
+                            <button class="btn-spinner" onclick="adjustSpeed(1, -50)">−</button>
+                            <input type="number" id="speed-1" min="450" max="3450" step="50" value="1500">
+                            <button class="btn-spinner" onclick="adjustSpeed(1, 50)">+</button>
+                        </div>
+                        <button class="btn btn-sm" onclick="setPumpSpeed(1)">Set</button>
+                    </div>
+                    <div class="speed-control">
+                        <h3>Speed 2</h3>
+                        <div class="spinner-group">
+                            <button class="btn-spinner" onclick="adjustSpeed(2, -50)">−</button>
+                            <input type="number" id="speed-2" min="450" max="3450" step="50" value="2200">
+                            <button class="btn-spinner" onclick="adjustSpeed(2, 50)">+</button>
+                        </div>
+                        <button class="btn btn-sm" onclick="setPumpSpeed(2)">Set</button>
+                    </div>
+                    <div class="speed-control">
+                        <h3>Speed 3</h3>
+                        <div class="spinner-group">
+                            <button class="btn-spinner" onclick="adjustSpeed(3, -50)">−</button>
+                            <input type="number" id="speed-3" min="450" max="3450" step="50" value="2800">
+                            <button class="btn-spinner" onclick="adjustSpeed(3, 50)">+</button>
+                        </div>
+                        <button class="btn btn-sm" onclick="setPumpSpeed(3)">Set</button>
+                    </div>
+                    <div class="speed-control">
+                        <h3>Speed 4</h3>
+                        <div class="spinner-group">
+                            <button class="btn-spinner" onclick="adjustSpeed(4, -50)">−</button>
+                            <input type="number" id="speed-4" min="450" max="3450" step="50" value="3200">
+                            <button class="btn-spinner" onclick="adjustSpeed(4, 50)">+</button>
+                        </div>
+                        <button class="btn btn-sm" onclick="setPumpSpeed(4)">Set</button>
+                    </div>
+                    <div class="speed-control">
+                        <h3>Speed 5</h3>
+                        <div class="spinner-group">
+                            <button class="btn-spinner" onclick="adjustSpeed(5, -50)">−</button>
+                            <input type="number" id="speed-5" min="450" max="3450" step="50" value="3450">
+                            <button class="btn-spinner" onclick="adjustSpeed(5, 50)">+</button>
+                        </div>
+                        <button class="btn btn-sm" onclick="setPumpSpeed(5)">Set</button>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- Schedules -->
+            <section class="card" id="schedules-section" style="display: none;">
+                <div class="section-header">
+                    <h2>📅 Schedules</h2>
+                    <button class="btn-icon-refresh" onclick="refreshScheduleSettings()" title="Refresh"><i
+                            class="mdi mdi-refresh"></i></button>
+                </div>
+                <div class="info-item" style="margin-bottom: 16px;">
+                    <span class="label">Schedule Off Status:</span>
+                    <span id="schedule-off-status" class="badge">-</span>
+                </div>
+                <div class="schedules-container">
+                    <div class="schedule-card" id="schedule-1">
+                        <h3>Schedule 1</h3>
+                        <div class="schedule-controls">
+                            <label>Start Time:</label>
+                            <input type="time" id="schedule-1-time" value="08:00">
+                            <label>Speed:</label>
+                            <select id="schedule-1-speed" class="select-sm">
+                                <option value="Off">Off</option>
+                                <option value="Speed 1">Speed 1</option>
+                                <option value="Speed 2" selected>Speed 2</option>
+                                <option value="Speed 3">Speed 3</option>
+                                <option value="Speed 4">Speed 4</option>
+                                <option value="Speed 5">Speed 5</option>
+                            </select>
+                            <label>
+                                <input type="checkbox" id="schedule-1-waterfall">
+                                Waterfall
+                            </label>
+                            <button class="btn btn-sm" onclick="setSchedule(1)">Apply</button>
+                        </div>
+                        <div class="schedule-status">
+                            <span class="label">Status:</span>
+                            <span id="schedule-1-status">-</span>
+                        </div>
+                    </div>
+
+                    <div class="schedule-card" id="schedule-2">
+                        <h3>Schedule 2</h3>
+                        <div class="schedule-controls">
+                            <label>Start Time:</label>
+                            <input type="time" id="schedule-2-time" value="14:00">
+                            <label>Speed:</label>
+                            <select id="schedule-2-speed" class="select-sm">
+                                <option value="Off">Off</option>
+                                <option value="Speed 1">Speed 1</option>
+                                <option value="Speed 2">Speed 2</option>
+                                <option value="Speed 3" selected>Speed 3</option>
+                                <option value="Speed 4">Speed 4</option>
+                                <option value="Speed 5">Speed 5</option>
+                            </select>
+                            <label>
+                                <input type="checkbox" id="schedule-2-waterfall">
+                                Waterfall
+                            </label>
+                            <button class="btn btn-sm" onclick="setSchedule(2)">Apply</button>
+                        </div>
+                        <div class="schedule-status">
+                            <span class="label">Status:</span>
+                            <span id="schedule-2-status">-</span>
+                        </div>
+                    </div>
+
+                    <div class="schedule-card" id="schedule-3">
+                        <h3>Schedule 3</h3>
+                        <div class="schedule-controls">
+                            <label>Start Time:</label>
+                            <input type="time" id="schedule-3-time" value="18:00">
+                            <label>Speed:</label>
+                            <select id="schedule-3-speed" class="select-sm">
+                                <option value="Off" selected>Off</option>
+                                <option value="Speed 1">Speed 1</option>
+                                <option value="Speed 2">Speed 2</option>
+                                <option value="Speed 3">Speed 3</option>
+                                <option value="Speed 4">Speed 4</option>
+                                <option value="Speed 5">Speed 5</option>
+                            </select>
+                            <label>
+                                <input type="checkbox" id="schedule-3-waterfall">
+                                Waterfall
+                            </label>
+                            <button class="btn btn-sm" onclick="setSchedule(3)">Apply</button>
+                        </div>
+                        <div class="schedule-status">
+                            <span class="label">Status:</span>
+                            <span id="schedule-3-status">-</span>
+                        </div>
+                    </div>
+
+                    <div class="schedule-card" id="schedule-4">
+                        <h3>Schedule 4</h3>
+                        <div class="schedule-controls">
+                            <label>Start Time:</label>
+                            <input type="time" id="schedule-4-time" value="20:00">
+                            <label>Speed:</label>
+                            <select id="schedule-4-speed" class="select-sm">
+                                <option value="Off" selected>Off</option>
+                                <option value="Speed 1">Speed 1</option>
+                                <option value="Speed 2">Speed 2</option>
+                                <option value="Speed 3">Speed 3</option>
+                                <option value="Speed 4">Speed 4</option>
+                                <option value="Speed 5">Speed 5</option>
+                            </select>
+                            <label>
+                                <input type="checkbox" id="schedule-4-waterfall">
+                                Waterfall
+                            </label>
+                            <button class="btn btn-sm" onclick="setSchedule(4)">Apply</button>
+                        </div>
+                        <div class="schedule-status">
+                            <span class="label">Status:</span>
+                            <span id="schedule-4-status">-</span>
+                        </div>
+                    </div>
+
+                    <div class="schedule-card" id="schedule-5">
+                        <h3>Schedule 5</h3>
+                        <div class="schedule-controls">
+                            <label>Start Time:</label>
+                            <input type="time" id="schedule-5-time" value="22:00">
+                            <label>Speed:</label>
+                            <select id="schedule-5-speed" class="select-sm">
+                                <option value="Off" selected>Off</option>
+                                <option value="Speed 1">Speed 1</option>
+                                <option value="Speed 2">Speed 2</option>
+                                <option value="Speed 3">Speed 3</option>
+                                <option value="Speed 4">Speed 4</option>
+                                <option value="Speed 5">Speed 5</option>
+                            </select>
+                            <label>
+                                <input type="checkbox" id="schedule-5-waterfall">
+                                Waterfall
+                            </label>
+                            <button class="btn btn-sm" onclick="setSchedule(5)">Apply</button>
+                        </div>
+                        <div class="schedule-status">
+                            <span class="label">Status:</span>
+                            <span id="schedule-5-status">-</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Maintenance -->
+            <section class="card" id="maintenance-section" style="display: none;" hidden>
+                <h2>🔧 Maintenance</h2>
+                <div class="maintenance-buttons">
+                    <button class="btn btn-primary" onclick="syncPumpClock()">⏰ Sync Pump Clock</button>
+                </div>
+            </section>
+
+            <!-- Auto-refresh -->
+            <section class="card" id="auto-refresh-section" style="display: none;">
+                <h2>🔄 Auto-Refresh</h2>
+                <div class="auto-refresh-controls">
+                    <label>
+                        <input type="checkbox" id="auto-refresh-toggle" onchange="toggleAutoRefresh()">
+                        Enable Auto-Refresh
+                    </label>
+                    <label for="refresh-interval">Interval (seconds):</label>
+                    <input type="number" id="refresh-interval" min="1" max="60" value="5" style="width: 80px;">
+                </div>
+            </section>
+
+            <!-- System Card -->
+            <section class="card card-compact" id="system-section" style="display: none;">
+                <h2>🖥️ System</h2>
+                <div class="info-grid grid-2-col">
+                    <div class="info-item">
+                        <span class="label">ESPHome Version:</span>
+                        <span id="esphome-version">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">SSID:</span>
+                        <span id="wifi-ssid">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">IP Address:</span>
+                        <span id="wifi-ip">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">WiFi Signal:</span>
+                        <span id="wifi-signal">-</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+
+</html>
