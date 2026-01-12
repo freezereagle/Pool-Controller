@@ -1,15 +1,15 @@
 substitutions:
   waterfall_pin: GPIO1
   one_wire_pin: GPIO10
-  air_temp_id: 0xeaaf9e231e64ff28
-  water_temp_id: 0x91f895231e64ff28
+  air_temp_id: !secret air_temp_id
+  water_temp_id: !secret water_temp_id
   pentair_tx_pin: GPIO17
   pentair_rx_pin: GPIO18
   right_arrow: "➡️"
   pentair_light_pin: GPIO46
 
 esphome:
-  name: esphome-web-551c88
+  name: pool-controller
   friendly_name: Pool Controller
   min_version: 2025.9.0
   name_add_mac_suffix: false
@@ -27,12 +27,13 @@ logger:
 # Enable Home Assistant API
 api:
   encryption:
-    key: "n4iIeFt/Mf7iU9ItsSL1HM8DUwzl9xlLBZ8cuOAxbEI="
+    key: !secret pool_controller_api_key
 
 # Allow Over-The-Air updates
 ota:
   - platform: esphome
-    password: "f91133fb8deee35feac447aa23650d81"
+    id: my_ota
+    password: !secret pool_controller_ota_password
 
 wifi:
   ssid: !secret wifi_ssid
@@ -93,7 +94,9 @@ number:
     icon: "mdi:speedometer"
     mode: box
 
-# column labels for scedule clance
+text:
+
+# column labels for schedule glance
 text_sensor:
   - platform: template
     name: start_label
@@ -114,4 +117,3 @@ text_sensor:
   - platform: template
     name: blank_label
     lambda: return{" "};
-    
