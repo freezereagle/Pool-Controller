@@ -7,6 +7,7 @@ A complete ESPHome-based pool automation platform that integrates custom hardwar
 This project provides an end-to-end solution for pool automation:
 
 - **Custom ESPHome Components** communicate directly with pool hardware (Pentair pumps and chlorinators) and extend ESPHome's capabilities with custom web endpoints
+- **ESPHome Configuration** provides complete firmware setup for the Waveshare ESP32-S3 relay module, including modular YAML files for all pool equipment
 - **Management Tools** help with device setup, diagnostics, and REST API integration
 - **Web Dashboard** provides a modern, responsive interface for monitoring and controlling your pool system from any browser
 
