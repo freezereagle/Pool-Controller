@@ -3,7 +3,7 @@
 ESPHome component for controlling Pentair IntelliFlo variable speed pumps and IntelliChlor salt water chlorinators over RS485.
 This component is a combination of two other components:
 1. [Nicostrown's Pentair Intelliflo Component](https://github.com/nicostrown/ESPHome-Pentair-Intelliflo) with a fix to the RPM setting protocal and adding mor information from the staus request.
-2. [Wolfson292's Pentair Intellichlor component](https://github.com/wolfson292/intellichlor)
+2. [Scott Wolf's (wolfson292) Pentair Intellichlor component](https://github.com/wolfson292/intellichlor)
 
 The major change is they both use the same in and out buffers, so the pump and clorinator can communicate on a common RS485 bus.
 
