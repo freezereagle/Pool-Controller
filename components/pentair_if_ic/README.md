@@ -1,19 +1,24 @@
 # Pentair IntelliFlo + IntelliChlor Component
 
 ESPHome component for controlling Pentair IntelliFlo variable speed pumps and IntelliChlor salt water chlorinators over RS485.
+This component is a combination of two other components:
+1. [Nicostrown's Pentair Intelliflo Component](https://github.com/nicostrown/ESPHome-Pentair-Intelliflo) with a fix to the RPM setting protocal and adding mor information from the staus request.
+2. [Wolfson292's Pentair Intellichlor component](https://github.com/wolfson292/intellichlor)
+
+The major change is they both use the same in and out buffers, so the pump and clorinator can communicate on a common RS485 bus.
 
 ## Features
 
 - **Unified Communication**: Single component manages both IntelliFlo pump and IntelliChlor chlorinator on shared RS485 bus
 - **Automatic Polling**: Configurable polling intervals (default 30s)
 - **Bus Arbitration**: Prevents transmission collisions between protocols
-- **Full Sensor Support**: Exposes all pump and chlorinator sensors to Home Assistant
+- **Full Sensor Support**: Exposes all known pump and chlorinator sensors to Home Assistant
 - **Manual Refresh**: On-demand chlorinator status updates via button/automation
 
 ## Hardware Requirements
 
 - ESP32 or ESP8266
-- RS485 to TTL converter (e.g., MAX485)
+- RS485 to TTL converter (e.g., MAX485) if not part of your board
 - Pentair IntelliFlo pump
 - Pentair IntelliChlor chlorinator
 - Optional: Flow control pin for half-duplex RS485
@@ -419,7 +424,7 @@ This component is provided as-is for use with ESPHome and Home Assistant.
 ## Credits
 
 Based on original separate components:
-- Pentair IntelliFlo component
-- Pentair IntelliChlor component
+- Pentair IntelliFlo component (https://github.com/nicostrown/ESPHome-Pentair-Intelliflo)
+- Pentair IntelliChlor component (https://github.com/wolfson292/intellichlor)
 
 Combined and enhanced for shared RS485 bus operation.
