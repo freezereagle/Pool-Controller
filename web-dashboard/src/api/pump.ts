@@ -10,6 +10,7 @@ export interface PumpMetrics {
   pumpRpm: number;
   power: number;
   flowM3H: number;
+  pressure: number;
   timeRemaining: number;
   pumpClock: number;
 }
@@ -55,13 +56,22 @@ export class PumpAPI extends BaseESPHomeClient {
   }
 
   /**
-   * Get all pump metrics (RPM, power, flow, time, clock)
+   * Get pump program/mode
+   */
+  async getPumpProgram(): Promise<string> {
+    const state = await this.request<TextSensorState>('/text_sensor/pump_program');
+    return state.state;
+  }
+
+  /**
+   * Get all pump metrics (RPM, power, flow, pressure, time, clock)
    */
   async getPumpMetrics(): Promise<PumpMetrics> {
-    const [rpm, power, flow, timeRemaining, clock] = await Promise.all([
+    const [rpm, power, flow, pressure, timeRemaining, clock] = await Promise.all([
       this.request<SensorState>('/sensor/pump_rpm'),
       this.request<SensorState>('/sensor/power'),
       this.request<SensorState>('/sensor/flow_m__h'),
+      this.request<SensorState>('/sensor/pressure'),
       this.request<SensorState>('/sensor/time_remaining'),
       this.request<SensorState>('/sensor/pump_clock'),
     ]);
@@ -70,6 +80,7 @@ export class PumpAPI extends BaseESPHomeClient {
       pumpRpm: rpm.state,
       power: power.state,
       flowM3H: flow.state,
+      pressure: pressure.state,
       timeRemaining: timeRemaining.state,
       pumpClock: clock.state,
     };
@@ -387,5 +398,56 @@ export class PumpAPI extends BaseESPHomeClient {
   async setTakeoverMode(state: boolean): Promise<void> {
     const action = state ? 'turn_on' : 'turn_off';
     await this.request(`/switch/takeover_mode/${action}`, 'POST');
+  }
+
+  // ==================== Pump Control Buttons ====================
+
+  /**
+   * Request pump status update
+   */
+  async requestPumpStatus(): Promise<void> {
+    await this.request('/button/request_pump_status/press', 'POST');
+  }
+
+  /**
+   * Run pump
+   */
+  async runPump(): Promise<void> {
+    await this.request('/button/pump_run/press', 'POST');
+  }
+
+  /**
+   * Stop pump
+   */
+  async stopPump(): Promise<void> {
+    await this.request('/button/pump_stop/press', 'POST');
+  }
+
+  /**
+   * Set pump to local control
+   */
+  async pumpToLocalControl(): Promise<void> {
+    await this.request('/button/pump_to_local_control/press', 'POST');
+  }
+
+  /**
+   * Set pump to remote control
+   */
+  async pumpToRemoteControl(): Promise<void> {
+    await this.request('/button/pump_to_remote_control/press', 'POST');
+  }
+
+  /**
+   * Run local program (1-4)
+   */
+  async runLocalProgram(programNum: 1 | 2 | 3 | 4): Promise<void> {
+    await this.request(`/button/run_local_program_${programNum}/press`, 'POST');
+  }
+
+  /**
+   * Run external program (1-4)
+   */
+  async runExternalProgram(programNum: 1 | 2 | 3 | 4): Promise<void> {
+    await this.request(`/button/run_external_program_${programNum}/press`, 'POST');
   }
 }

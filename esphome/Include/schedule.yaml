@@ -92,6 +92,71 @@ button:
         - lambda: |-
             auto time = id(homeassistant_time).now();
             id(my_pentair).setPumpClock(time.hour, time.minute);
+  
+  - platform: template
+    name: "Request Pump Status"
+    on_press:
+      - lambda: id(my_pentair).requestPumpStatus();
+  
+  - platform: template
+    name: "Pump Run"
+    on_press:
+      - lambda: id(my_pentair).run();
+  
+  - platform: template
+    name: "Pump Stop"
+    on_press:
+      - lambda: id(my_pentair).stop();
+  
+  - platform: template
+    name: "Pump to Local Control"
+    on_press:
+      - lambda: id(my_pentair).pumpToLocalControl();
+  
+  - platform: template
+    name: "Pump to Remote Control"
+    on_press:
+      - lambda: id(my_pentair).pumpToRemoteControl();
+  
+  - platform: template
+    name: "Run Local Program 1"
+    on_press:
+      - lambda: id(my_pentair).commandLocalProgram(0);
+  
+  - platform: template
+    name: "Run Local Program 2"
+    on_press:
+      - lambda: id(my_pentair).commandLocalProgram(1);
+  
+  - platform: template
+    name: "Run Local Program 3"
+    on_press:
+      - lambda: id(my_pentair).commandLocalProgram(2);
+  
+  - platform: template
+    name: "Run Local Program 4"
+    on_press:
+      - lambda: id(my_pentair).commandLocalProgram(3);
+  
+  - platform: template
+    name: "Run External Program 1"
+    on_press:
+      - lambda: id(my_pentair).commandExternalProgram(0);
+  
+  - platform: template
+    name: "Run External Program 2"
+    on_press:
+      - lambda: id(my_pentair).commandExternalProgram(1);
+  
+  - platform: template
+    name: "Run External Program 3"
+    on_press:
+      - lambda: id(my_pentair).commandExternalProgram(2);
+  
+  - platform: template
+    name: "Run External Program 4"
+    on_press:
+      - lambda: id(my_pentair).commandExternalProgram(3);
             
 # Configuration Numbers
 number:
@@ -715,6 +780,13 @@ sensor:
       web_server:
         sorting_group_id: sorting_group_pump_status
         sorting_weight: 6
+    pressure:
+      id: pump_pressure
+      name: "Pressure"
+      icon: "mdi:gauge"
+      web_server:
+        sorting_group_id: sorting_group_pump_status
+        sorting_weight: 6.5
     time_remaining:
       id: time_remaining
       name: "Time Remaining"
@@ -847,6 +919,15 @@ sensor:
       sorting_weight: 7
 
 text_sensor:
+  - platform: pentair_if_ic
+    program:
+      name: "Pump Program"
+      id: pump_program
+      icon: "mdi:cog"
+      web_server:
+        sorting_group_id: sorting_group_pump_status
+        sorting_weight: 3
+
   - platform: version
     name: "ESPHome Version"
     web_server:

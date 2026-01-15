@@ -22,13 +22,17 @@ Core HTTP client functionality used by all modules.
 
 ### `api/pump.ts`
 **Pool Pump Operations**
-- Pump status and metrics (RPM, power, flow)
+- Pump status and metrics (RPM, power, flow, pressure)
+- Active program/mode monitoring
 - Mode control (Auto, Off, Speed 1-5)
 - Speed configuration (450-3450 RPM)
 - Schedule management (5 schedules with times, speeds, waterfall)
 - Waterfall controls
 - Pump clock sync
 - Takeover mode
+- Pump control buttons (run, stop, request status)
+- Local/remote control switching
+- Local and external program execution (Programs 1-4)
 
 ### `api/chlorinator.ts`
 **Chlorinator Management**

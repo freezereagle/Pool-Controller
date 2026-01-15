@@ -30,40 +30,43 @@
 
 The web dashboard provides a modern, responsive interface for your pool automation system:
 
-### 🌊 Responsive Design
+### Responsive Design
 - 2-column layout on desktop (≥769px)
 - Single column on mobile with optimized padding
 - Compact header (60% height reduction)
 - Material Design Icons throughout
 
-### 💡 Pool Light
+### Pool Light
 - Dedicated control section at the top
 - Power on/off toggle
 - 14 light modes (SAm, Party, Romance, Caribbean, American, Sunset, Royalty, Blue, Green, Red, White, Magenta, Hold, Recall)
 - Current mode display
 
-### 🌡️ Temperatures
+### Temperatures
 - Air temperature (°F and °C)
 - Water temperature (°F and °C)
 - Chlorinator water temperature
 
-### 🎛️ Pump Mode
+### Pump Mode
 - Quick mode selection (Auto, Off, Speed 1-5)
 - Current mode display
 
-### 📅 Schedule Overview
+### Schedule Overview
 - Glance-style table showing all 5 schedules at a glance
 - 12-hour time format with AM/PM
 - Schedule status, start time, speed, RPM, and waterfall state
 - Pump end time display
 - Schedule off status
 
-### 💨 Pump Status
+### Pump Status
 - Real-time pump running state
 - Current RPM
 - Power consumption
 - Water flow rate
+- Pump pressure (bar)
+- Active program/mode
 - Time remaining
+- Pump clock (formatted)
 - Current schedule
 
 ### ⚠️ Alarms
@@ -73,33 +76,38 @@ The web dashboard provides a modern, responsive interface for your pool automati
 - High current, low voltage, low temperature
 - Check PCB
 
-### 🧪 Chlorinator
+### Chlorinator
 - Salt level (ppm)
 - Status and error codes
 - Current output percentage
 - Adjustable chlorine output (0-100%)
 - Manual refresh
 
-### ⚡ Pump Speeds
+### Pump Speeds
 - Configure 5 pump speeds (450-3450 RPM)
 - Spinner controls with +/- buttons
 - Larger input fields to prevent number truncation
 
-### 🔌 Switches
+### Switches
 - Waterfall control (manual and auto)
 - Auto schedule enable/disable
 - Takeover mode
 - Off switch
 
-### 📅 Schedules (Detailed)
+### Schedules (Detailed)
 - Configure 5 independent schedules
 - Set start times
 - Select speed for each schedule
 - Enable/disable waterfall per schedule
 - View schedule status
 
-### 🔧 Maintenance
-- Sync pump clock
+### Maintenance
+- Sync pump clock with system time
+- Request pump status update
+- Run/Stop pump commands
+- Local/Remote control mode switching
+- Local program control (Programs 1-4)
+- External program control (Programs 1-4)
 - Refresh chlorinator data
 
 ### 🔄 Auto-Refresh
@@ -114,10 +122,10 @@ Build a minified, single-file HTML bundle:
 npm run build:bundle
 ```
 
-This creates `build/index.html` (a single 48.9 KB file) with:
+This creates `build/index.html` (a single 65.8 KB file) with:
 - All HTML, CSS, and JavaScript inlined
 - No ES6 modules (works without proxy)
-- 40% size reduction (81.3 KB → 48.9 KB)
+- 42.9% size reduction (115.3 KB → 65.8 KB)
 - Direct ESPHome connection (no CORS proxy needed)
 
 **Output location:** `web-dashboard/build/index.html`
@@ -189,9 +197,9 @@ See [src/examples.ts](src/examples.ts) for more code examples.
 
 ## Browser Compatibility
 
-- Chrome/Edge: ✅ Full support
-- Firefox: ✅ Full support
-- Safari: ✅ Full support (requires ES2020+ support)
+- Chrome/Edge: Full support
+- Firefox: Full support
+- Safari: Full support (requires ES2020+ support)
 
 ## Troubleshooting
 

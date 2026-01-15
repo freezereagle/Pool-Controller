@@ -46,7 +46,7 @@
             <!-- Pool Light -->
             <section class="card card-compact" id="pool-light-section" style="display: none;">
                 <div class="section-header">
-                    <h2>💡 Pool Light</h2>
+                    <h2>Pool Light</h2>
                     <button class="btn-icon-refresh" onclick="refreshPoolLight()" title="Refresh"><i
                             class="mdi mdi-refresh"></i></button>
                 </div>
@@ -83,7 +83,7 @@
             <!-- Temperatures -->
             <section class="card" id="temperatures-section" style="display: none;">
                 <div class="section-header">
-                    <h2>🌡️ Temperatures</h2>
+                    <h2>Temperatures</h2>
                     <button class="btn-icon-refresh" onclick="refreshTemperatures()" title="Refresh"><i
                             class="mdi mdi-refresh"></i></button>
                 </div>
@@ -106,7 +106,7 @@
             <!-- Pump Mode -->
             <section class="card card-compact" id="pump-mode-section" style="display: none;">
                 <div class="section-header">
-                    <h2>🎛️ Pump Mode</h2>
+                    <h2>Pump Mode</h2>
                     <button class="btn-icon-refresh" onclick="refreshPumpMode()" title="Refresh"><i
                             class="mdi mdi-refresh"></i></button>
                 </div>
@@ -134,7 +134,7 @@
             <!-- Switches -->
             <section class="card card-compact" id="switches-section" style="display: none;">
                 <div class="section-header">
-                    <h2>🔌 Switches</h2>
+                    <h2>Switches</h2>
                     <button class="btn-icon-refresh" onclick="refreshSwitches()" title="Refresh"><i
                             class="mdi mdi-refresh"></i></button>
                 </div>
@@ -164,7 +164,7 @@
             <!-- Schedule  -->
             <section class="card" id="schedule-overview-section" style="display: none;">
                 <div class="section-header">
-                    <h2>📅 Schedule</h2>
+                    <h2>Schedule</h2>
                     <button class="btn-icon-refresh" onclick="refreshScheduleOverview()" title="Refresh"><i
                             class="mdi mdi-refresh"></i></button>
                 </div>
@@ -270,7 +270,7 @@
             <!-- Pump Status -->
             <section class="card card-compact" id="pump-status-section" style="display: none;">
                 <div class="section-header">
-                    <h2>💨 Pump Status</h2>
+                    <h2>Pump Status</h2>
                     <button class="btn-icon-refresh" onclick="refreshPumpStatus()" title="Refresh"><i
                             class="mdi mdi-refresh"></i></button>
                 </div>
@@ -296,6 +296,14 @@
                         <span id="pump-flow">-</span>
                     </div>
                     <div class="status-item">
+                        <span class="label">Pressure:</span>
+                        <span id="pump-pressure">-</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">Program:</span>
+                        <span id="pump-program">-</span>
+                    </div>
+                    <div class="status-item">
                         <span class="label">Time Remaining:</span>
                         <span id="time-remaining">-</span>
                     </div>
@@ -313,7 +321,7 @@
             <!-- Chlorinator -->
             <section class="card card-compact" id="chlorinator-section" style="display: none;">
                 <div class="section-header">
-                    <h2>🧪 Chlorinator</h2>
+                    <h2>Chlorinator</h2>
                     <button class="btn-icon-refresh" onclick="refreshChlorinatorAction()" title="Refresh"><i
                             class="mdi mdi-refresh"></i></button>
                 </div>
@@ -402,7 +410,7 @@
 
             <!-- Pump Speeds -->
             <section class="card card-compact" id="pump-speeds-section" style="display: none;">
-                <h2>⚡ Pump Speeds</h2>
+                <h2>Pump Speeds</h2>
                 <div class="speeds-grid">
                     <div class="speed-control">
                         <h3>Speed 1</h3>
@@ -456,7 +464,7 @@
             <!-- Schedules -->
             <section class="card" id="schedules-section" style="display: none;">
                 <div class="section-header">
-                    <h2>📅 Schedules</h2>
+                    <h2>Schedules</h2>
                     <button class="btn-icon-refresh" onclick="refreshScheduleSettings()" title="Refresh"><i
                             class="mdi mdi-refresh"></i></button>
                 </div>
@@ -599,9 +607,26 @@
 
             <!-- Maintenance -->
             <section class="card" id="maintenance-section" style="display: none;" hidden>
-                <h2>🔧 Maintenance</h2>
+                <h2>Maintenance</h2>
                 <div class="maintenance-buttons">
-                    <button class="btn btn-primary" onclick="syncPumpClock()">⏰ Sync Pump Clock</button>
+                    <button class="btn btn-success" onclick="runPump()">▶️ Run Pump</button>
+                    <button class="btn btn-danger" onclick="stopPump()">⏹️ Stop Pump</button>
+                    <button class="btn btn-info" onclick="pumpToLocalControl()">🏠 Pump Local</button>
+                    <button class="btn btn-info" onclick="pumpToRemoteControl()">🌐 Pump Remote</button>
+                    <button class="btn btn-info" onclick="requestPumpStatus()">Request Pump Status</button>
+                    <button class="btn btn-info" onclick="syncPumpClock()">Sync Pump Clock</button>
+                </div>
+                <div class="maintenance-buttons" style="margin-top: 10px;">
+                    <button class="btn btn-info" onclick="runLocalProgram(1)">Local Prog 1</button>
+                    <button class="btn btn-info" onclick="runLocalProgram(2)">Local Prog 2</button>
+                    <button class="btn btn-info" onclick="runLocalProgram(3)">Local Prog 3</button>
+                    <button class="btn btn-info" onclick="runLocalProgram(4)">Local Prog 4</button>
+                </div>
+                <div class="maintenance-buttons" style="margin-top: 10px;">
+                    <button class="btn btn-info" onclick="runExternalProgram(1)">External Prog 1</button>
+                    <button class="btn btn-info" onclick="runExternalProgram(2)">External Prog 2</button>
+                    <button class="btn btn-info" onclick="runExternalProgram(3)">External Prog 3</button>
+                    <button class="btn btn-info" onclick="runExternalProgram(4)">External Prog 4</button>
                 </div>
             </section>
 
@@ -620,7 +645,7 @@
 
             <!-- System Card -->
             <section class="card card-compact" id="system-section" style="display: none;">
-                <h2>🖥️ System</h2>
+                <h2>System</h2>
                 <div class="info-grid grid-2-col">
                     <div class="info-item">
                         <span class="label">ESPHome Version:</span>

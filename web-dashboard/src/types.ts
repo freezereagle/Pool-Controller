@@ -91,6 +91,7 @@ export const POOL_ENTITIES = {
     power: 'sensor-power',
     pumpRpm: 'sensor-pump_rpm',
     flowM3H: 'sensor-flow_m__h',
+    pressure: 'sensor-pressure',
     timeRemaining: 'sensor-time_remaining',
     pumpClock: 'sensor-pump_clock',
     saltLevel: 'sensor-salt_level',
@@ -118,12 +119,26 @@ export const POOL_ENTITIES = {
   buttons: {
     syncPumpClock: 'button-sync_pump_clock',
     refreshChlorinator: 'button-refresh_chlorinator',
+    requestPumpStatus: 'button-request_pump_status',
+    pumpRun: 'button-pump_run',
+    pumpStop: 'button-pump_stop',
+    pumpToLocalControl: 'button-pump_to_local_control',
+    pumpToRemoteControl: 'button-pump_to_remote_control',
+    runLocalProgram1: 'button-run_local_program_1',
+    runLocalProgram2: 'button-run_local_program_2',
+    runLocalProgram3: 'button-run_local_program_3',
+    runLocalProgram4: 'button-run_local_program_4',
+    runExternalProgram1: 'button-run_external_program_1',
+    runExternalProgram2: 'button-run_external_program_2',
+    runExternalProgram3: 'button-run_external_program_3',
+    runExternalProgram4: 'button-run_external_program_4',
   },
   
   textSensors: {
     esphomeVersion: 'text_sensor-esphome_version',
     ssid: 'text_sensor-ssid',
     ipAddress: 'text_sensor-ip_address',
+    pumpProgram: 'text_sensor-pump_program',
     pumpClockFormatted: 'text_sensor-pump_clock_formatted',
     currentSchedule: 'text_sensor-current_schedule',
     scheduleValidation: 'text_sensor-schedule_validation',
@@ -203,6 +218,7 @@ export interface PoolAutomationState {
   power: number;
   pumpRpm: number;
   flowM3H: number;
+  pressure: number;
   timeRemaining: number;
   pumpClock: number;
   saltLevel: number;
@@ -236,6 +252,7 @@ export interface PoolAutomationState {
   esphomeVersion: string;
   ssid: string;
   ipAddress: string;
+  pumpProgram: string;
   pumpClockFormatted: string;
   currentSchedule: string;
   scheduleValidation: string;

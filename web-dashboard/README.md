@@ -5,37 +5,37 @@ A modern, responsive web interface for ESPHome Pool Automation system with full 
 ## Features
 
 ### Web Dashboard
-- 🌊 Modern responsive interface with Material Design Icons
-- 📱 Mobile-optimized layout with 2-column desktop view
-- 💡 Dedicated pool light controls with mode selection
-- 🌡️ Real-time temperature monitoring
-- 🔄 Live pump status and control
-- 📅 Schedule overview table (glance-style)
-- ⚙️ Complete pump speed configuration
-- 🧪 Chlorinator monitoring and control
-- 🔌 Switch controls for waterfall and automation
-- 📊 System information display
-- ⏰ Auto-refresh with configurable interval
-- 🎨 Clean, card-based layout
-- 🔐 Authentication support
+- Modern responsive interface with Material Design Icons
+- Mobile-optimized layout with 2-column desktop view
+- Dedicated pool light controls with mode selection
+- Real-time temperature monitoring
+- Live pump status and control
+- Schedule overview table (glance-style)
+- Complete pump speed configuration
+- Chlorinator monitoring and control
+- Switch controls for waterfall and automation
+- System information display
+- Auto-refresh with configurable interval
+- Clean, card-based layout
+- Authentication support
 
 ### TypeScript API Client
-- ✅ Complete TypeScript type definitions for all 86 entities
-- ✅ REST API client for ESPHome devices
-- ✅ Get/Set operations for all entity types:
+- Complete TypeScript type definitions for all 103 entities
+- REST API client for ESPHome devices
+- Get/Set operations for all entity types:
   - Binary Sensors (10)
-  - Sensors (22)
+  - Sensors (24)
   - Switches (12)
-  - Buttons (2)
-  - Text Sensors (20)
+  - Buttons (15)
+  - Text Sensors (21)
   - Numbers (7)
   - Time (6)
   - Text (1)
   - Select (6)
-- ✅ Grouped operations (temperatures, pump metrics, chlorinator metrics, etc.)
-- ✅ State monitoring with polling
-- ✅ CORS proxy server for development
-- ✅ Full examples included
+- Grouped operations (temperatures, pump metrics, chlorinator metrics, etc.)
+- State monitoring with polling
+- CORS proxy server for development
+- Full examples included
 
 ## Installation
 
@@ -112,6 +112,21 @@ Run `npm run serve` and access via `http://localhost:3000`
 #### Pump Mode
 - Quick mode selection (Auto, Off, Speed 1-5)
 - Current mode display
+
+#### Pump Status
+- Running state and status
+- Live RPM, power, flow, and pressure readings
+- Active program/mode display
+- Time remaining and pump clock
+- Current schedule display
+
+#### Maintenance Controls
+- Sync pump clock with system time
+- Request pump status update
+- Run/Stop pump
+- Local/Remote control mode switching
+- Local program control (Programs 1-4)
+- External program control (Programs 1-4)
 
 #### Schedule Overview
 - Glance-style table showing all 5 schedules

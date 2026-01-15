@@ -210,6 +210,7 @@ function showAllSections() {
         'switches-section',
         'schedule-overview-section',
         //        'schedules-section',
+        'maintenance-section',
         'auto-refresh-section',
         'system-section'
     ];
@@ -286,7 +287,15 @@ window.refreshPumpStatus = async function () {
         document.getElementById('pump-rpm').textContent = metrics.pumpRpm;
         document.getElementById('pump-power').textContent = metrics.power;
         document.getElementById('pump-flow').textContent = metrics.flowM3H;
+        document.getElementById('pump-pressure').textContent = metrics.pressure ? metrics.pressure.toFixed(2) + ' bar' : 'N/A';
         document.getElementById('time-remaining').textContent = metrics.timeRemaining;
+
+        try {
+            const program = await pool.pump.getPumpProgram();
+            document.getElementById('pump-program').textContent = program || 'None';
+        } catch (e) {
+            document.getElementById('pump-program').textContent = 'N/A';
+        }
 
         const clockFormatted = await pool.pump.getPumpClockFormatted();
         document.getElementById('pump-clock-formatted').textContent = clockFormatted;
@@ -690,6 +699,97 @@ window.syncPumpClock = async function () {
     } catch (error) {
         console.error('Error syncing pump clock:', error);
         showNotification('Error syncing pump clock', 'error');
+    }
+};
+
+// Request Pump Status
+window.requestPumpStatus = async function () {
+    if (!pool) return;
+    try {
+        await pool.pump.requestPumpStatus();
+        showNotification('Pump status requested', 'success');
+        setTimeout(() => refreshPumpStatus(), 1000);
+    } catch (error) {
+        console.error('Error requesting pump status:', error);
+        showNotification('Error requesting pump status', 'error');
+    }
+};
+
+// Run Pump
+window.runPump = async function () {
+    if (!pool) return;
+    try {
+        await pool.pump.runPump();
+        showNotification('Pump started', 'success');
+        setTimeout(() => refreshPumpStatus(), 1000);
+    } catch (error) {
+        console.error('Error running pump:', error);
+        showNotification('Error running pump', 'error');
+    }
+};
+
+// Stop Pump
+window.stopPump = async function () {
+    if (!pool) return;
+    try {
+        await pool.pump.stopPump();
+        showNotification('Pump stopped', 'success');
+        setTimeout(() => refreshPumpStatus(), 1000);
+    } catch (error) {
+        console.error('Error stopping pump:', error);
+        showNotification('Error stopping pump', 'error');
+    }
+};
+
+// Pump to Local Control
+window.pumpToLocalControl = async function () {
+    if (!pool) return;
+    try {
+        await pool.pump.pumpToLocalControl();
+        showNotification('Pump set to local control', 'success');
+        setTimeout(() => refreshPumpStatus(), 1000);
+    } catch (error) {
+        console.error('Error setting pump to local control:', error);
+        showNotification('Error setting pump to local control', 'error');
+    }
+};
+
+// Pump to Remote Control
+window.pumpToRemoteControl = async function () {
+    if (!pool) return;
+    try {
+        await pool.pump.pumpToRemoteControl();
+        showNotification('Pump set to remote control', 'success');
+        setTimeout(() => refreshPumpStatus(), 1000);
+    } catch (error) {
+        console.error('Error setting pump to remote control:', error);
+        showNotification('Error setting pump to remote control', 'error');
+    }
+};
+
+// Run Local Program
+window.runLocalProgram = async function (programNum) {
+    if (!pool) return;
+    try {
+        await pool.pump.runLocalProgram(programNum);
+        showNotification(`Local Program ${programNum} started`, 'success');
+        setTimeout(() => refreshPumpStatus(), 1000);
+    } catch (error) {
+        console.error(`Error running local program ${programNum}:`, error);
+        showNotification(`Error running local program ${programNum}`, 'error');
+    }
+};
+
+// Run External Program
+window.runExternalProgram = async function (programNum) {
+    if (!pool) return;
+    try {
+        await pool.pump.runExternalProgram(programNum);
+        showNotification(`External Program ${programNum} started`, 'success');
+        setTimeout(() => refreshPumpStatus(), 1000);
+    } catch (error) {
+        console.error(`Error running external program ${programNum}:`, error);
+        showNotification(`Error running external program ${programNum}`, 'error');
     }
 };
 
