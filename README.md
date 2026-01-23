@@ -1,6 +1,8 @@
 # Pool Controller Project
 
 A complete ESPHome-based pool automation platform that integrates custom hardware components, management tools, and a modern web dashboard for controlling and monitoring pool equipment.
+ 
+I've also posted about the controller in the HomeAssistant community forums. you can find tbat post here: [ESPHome Pool Controller: Integration for Pentair IntelliFlo pumps, IntelliChlor chlorinators, IntelliBrite Lights, and other pool features](https://community.home-assistant.io/t/esphome-pool-controller-integration-for-pentair-intelliflo-pumps-intellichlor-chlorinators-intellibrite-lights-and-other-pool-features/974565)
 
 ## Overview
 
