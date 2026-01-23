@@ -24,7 +24,7 @@ See [components/README.md](components/README.md) for details about the available
 
 ## ESPHome Configuration
 
-See [esphome/README.md](esphome/README.md) for the complete firmware configuration:
+See [esphome/README.md](esphome/README.md) for the complete hardware/firmware configuration:
 
 - **Hardware Platform**: Built for the Waveshare ESP32-S3-RELAY-6CH industrial module with 6 relay channels, built-in isolated RS485, and wide voltage input (7-36V DC)
 - **Modular YAML Configuration**: Main configuration file with separate includes for temperature sensors, pump scheduling, chlorinator control, and pool light modes
