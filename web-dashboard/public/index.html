@@ -56,7 +56,7 @@
                         <button id="switch-pool-light" class="btn btn-toggle"
                             onclick="toggleSwitch('pool_light', this)">-</button>
                     </div>
-                    <div class="switch-item" style="/* grid-column: 1 / -1; */">
+                    <div class="switch-item">
                         <span>Light Mode:</span>
                         <select id="light-mode-select" class="select" onchange="setLightMode()">
                             <option value="">Select mode...</option>
@@ -609,10 +609,12 @@
             <section class="card" id="maintenance-section" style="display: none;" hidden>
                 <h2>Maintenance</h2>
                 <div class="maintenance-buttons">
-                    <button class="btn btn-success" onclick="runPump()">▶️ Run Pump</button>
-                    <button class="btn btn-danger" onclick="stopPump()">⏹️ Stop Pump</button>
-                    <button class="btn btn-info" onclick="pumpToLocalControl()">🏠 Pump Local</button>
-                    <button class="btn btn-info" onclick="pumpToRemoteControl()">🌐 Pump Remote</button>
+                    <button class="btn btn-success" onclick="runPump()"><i class="mdi mdi-play"></i> Run Pump</button>
+                    <button class="btn btn-danger" onclick="stopPump()"><i class="mdi mdi-stop"></i> Stop Pump</button>
+                    <button class="btn btn-info" onclick="pumpToLocalControl()"><i class="mdi mdi-home"></i> Pump
+                        Local</button>
+                    <button class="btn btn-info" onclick="pumpToRemoteControl()"><i class="mdi mdi-web"></i> Pump
+                        Remote</button>
                     <button class="btn btn-info" onclick="requestPumpStatus()">Request Pump Status</button>
                     <button class="btn btn-info" onclick="syncPumpClock()">Sync Pump Clock</button>
                 </div>
@@ -663,6 +665,11 @@
                         <span class="label">WiFi Signal:</span>
                         <span id="wifi-signal">-</span>
                     </div>
+                </div>
+                <div class="control-group" style="margin-top: 10px; display: flex; justify-content: center;">
+                    <button id="dark-mode-toggle" class="btn btn-secondary" onclick="toggleDarkMode()">
+                        <i class="mdi mdi-theme-light-dark"></i> Toggle Dark Mode
+                    </button>
                 </div>
             </section>
         </div>

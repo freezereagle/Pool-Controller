@@ -940,3 +940,34 @@ document.getElementById('disconnect-btn').addEventListener('click', disconnectFr
 
 // Check for auto-connect on page load
 window.addEventListener('DOMContentLoaded', checkAndAutoConnect);
+
+// --- Dark Mode ---
+window.toggleDarkMode = function () {
+    const body = document.body;
+    body.classList.toggle('dark-mode');
+    const isDark = body.classList.contains('dark-mode');
+    localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
+    updateDarkModeButton(isDark);
+};
+
+function updateDarkModeButton(isDark) {
+    const btn = document.getElementById('dark-mode-toggle');
+    if (btn) {
+        if (isDark) {
+            btn.innerHTML = '<i class="mdi mdi-weather-sunny"></i> Switch to Light Mode';
+        } else {
+            btn.innerHTML = '<i class="mdi mdi-weather-night"></i> Switch to Dark Mode';
+        }
+    }
+}
+
+// Initialize Dark Mode
+window.addEventListener('DOMContentLoaded', () => {
+    const darkMode = localStorage.getItem('darkMode');
+    if (darkMode === 'enabled') {
+        document.body.classList.add('dark-mode');
+        updateDarkModeButton(true);
+    } else {
+        updateDarkModeButton(false);
+    }
+});
