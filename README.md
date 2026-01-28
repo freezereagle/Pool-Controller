@@ -1,6 +1,8 @@
 # Pool Controller Project
 
 A complete ESPHome-based pool automation platform that integrates custom hardware components, management tools, and a modern web dashboard for controlling and monitoring pool equipment.
+ 
+I've also posted about the controller in the HomeAssistant community forums. you can find that post here: [ESPHome Pool Controller: Integration for Pentair IntelliFlo pumps, IntelliChlor chlorinators, IntelliBrite Lights, and other pool features](https://community.home-assistant.io/t/esphome-pool-controller-integration-for-pentair-intelliflo-pumps-intellichlor-chlorinators-intellibrite-lights-and-other-pool-features/974565)
 
 ## Overview
 
@@ -22,7 +24,7 @@ See [components/README.md](components/README.md) for details about the available
 
 ## ESPHome Configuration
 
-See [esphome/README.md](esphome/README.md) for the complete firmware configuration:
+See [esphome/README.md](esphome/README.md) for the complete hardware/firmware configuration:
 
 - **Hardware Platform**: Built for the Waveshare ESP32-S3-RELAY-6CH industrial module with 6 relay channels, built-in isolated RS485, and wide voltage input (7-36V DC)
 - **Modular YAML Configuration**: Main configuration file with separate includes for temperature sensors, pump scheduling, chlorinator control, and pool light modes
