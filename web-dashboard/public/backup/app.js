@@ -1,6 +1,7 @@
 // --- Pump End Time Editing ---
 window.editPumpEndTime = function () {
-    document.getElementById('pump-end-time-popup').classList.remove('hidden');
+    document.getElementById('pump-end-time-popup').style.display = 'flex';
+    // Pre-fill with current value
     const current = document.getElementById('pump-end-time-tbl').textContent.trim();
     let [time, ampm] = current.split(' ');
     if (time && ampm) {
@@ -12,7 +13,7 @@ window.editPumpEndTime = function () {
     }
 };
 window.closePumpEndTimePopup = function () {
-    document.getElementById('pump-end-time-popup').classList.add('hidden');
+    document.getElementById('pump-end-time-popup').style.display = 'none';
 };
 window.savePumpEndTime = async function () {
     if (!pool) return;
@@ -26,14 +27,16 @@ window.savePumpEndTime = async function () {
     }
     closePumpEndTimePopup();
 };
-
 // --- Schedule Overview Editing ---
 let editingScheduleNum = null;
 
+// Edit Start Time
 window.editScheduleStart = function (num) {
     editingScheduleNum = num;
-    document.getElementById('schedule-time-popup').classList.remove('hidden');
+    document.getElementById('schedule-time-popup').style.display = 'flex';
+    // Pre-fill with current value
     const current = document.getElementById(`schedule-${num}-start-tbl`).textContent.trim();
+    // Convert to 24h for input
     let [time, ampm] = current.split(' ');
     if (time && ampm) {
         let [h, m] = time.split(':');
@@ -44,7 +47,7 @@ window.editScheduleStart = function (num) {
     }
 };
 window.closeScheduleTimePopup = function () {
-    document.getElementById('schedule-time-popup').classList.add('hidden');
+    document.getElementById('schedule-time-popup').style.display = 'none';
     editingScheduleNum = null;
 };
 window.saveScheduleTime = async function () {
@@ -60,14 +63,16 @@ window.saveScheduleTime = async function () {
     closeScheduleTimePopup();
 };
 
+// Edit Speed
 window.editScheduleSpeed = function (num) {
     editingScheduleNum = num;
-    document.getElementById('schedule-speed-popup').classList.remove('hidden');
+    document.getElementById('schedule-speed-popup').style.display = 'flex';
+    // Pre-fill with current value
     const current = document.getElementById(`schedule-${num}-speed-tbl`).textContent.trim();
     document.getElementById('schedule-speed-select').value = current;
 };
 window.closeScheduleSpeedPopup = function () {
-    document.getElementById('schedule-speed-popup').classList.add('hidden');
+    document.getElementById('schedule-speed-popup').style.display = 'none';
     editingScheduleNum = null;
 };
 window.saveScheduleSpeed = async function () {
@@ -83,10 +88,13 @@ window.saveScheduleSpeed = async function () {
     closeScheduleSpeedPopup();
 };
 
+// Toggle Waterfall
 window.toggleScheduleWaterfall = async function (num) {
     if (!pool) return;
     try {
+        // Get current state
         const current = await pool.pump.getScheduleWaterfall(num);
+        // Toggle to the opposite state
         const newState = !current;
         await pool.pump.setScheduleWaterfall(num, newState);
         showNotification(`Waterfall ${newState ? 'ON' : 'OFF'}`, 'success');
@@ -95,248 +103,24 @@ window.toggleScheduleWaterfall = async function (num) {
         showNotification('Failed to toggle waterfall', 'error');
     }
 };
-
 import { createPoolClient } from '../dist/esphome-api.js';
-
-// ===== DRAG AND DROP =====
-let draggedCard = null;
-
-function initDragAndDrop() {
-    const grid = document.querySelector('.grid');
-    if (!grid) return;
-    
-    const cards = grid.querySelectorAll('.card[draggable="true"]');
-    
-    cards.forEach(card => {
-        card.addEventListener('dragstart', handleDragStart);
-        card.addEventListener('dragend', handleDragEnd);
-        card.addEventListener('dragover', handleDragOver);
-        card.addEventListener('dragenter', handleDragEnter);
-        card.addEventListener('dragleave', handleDragLeave);
-        card.addEventListener('drop', handleDrop);
-    });
-    
-    // Load saved order
-    loadCardOrder();
-}
-
-function handleDragStart(e) {
-    draggedCard = this;
-    this.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', this.dataset.cardId);
-}
-
-function handleDragEnd(e) {
-    this.classList.remove('dragging');
-    document.querySelectorAll('.card').forEach(card => {
-        card.classList.remove('drag-over');
-    });
-    draggedCard = null;
-}
-
-function handleDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-}
-
-function handleDragEnter(e) {
-    e.preventDefault();
-    if (this !== draggedCard) {
-        this.classList.add('drag-over');
-    }
-}
-
-function handleDragLeave(e) {
-    this.classList.remove('drag-over');
-}
-
-function handleDrop(e) {
-    e.preventDefault();
-    this.classList.remove('drag-over');
-    
-    if (draggedCard && this !== draggedCard) {
-        const grid = document.querySelector('.grid');
-        const cards = Array.from(grid.querySelectorAll('.card[draggable="true"]'));
-        const draggedIndex = cards.indexOf(draggedCard);
-        const targetIndex = cards.indexOf(this);
-        
-        if (draggedIndex < targetIndex) {
-            this.parentNode.insertBefore(draggedCard, this.nextSibling);
-        } else {
-            this.parentNode.insertBefore(draggedCard, this);
-        }
-        
-        saveCardOrder();
-    }
-}
-
-function saveCardOrder() {
-    const grid = document.querySelector('.grid');
-    const cards = grid.querySelectorAll('.card[draggable="true"]');
-    const order = Array.from(cards).map(card => card.dataset.cardId);
-    localStorage.setItem('cardOrder', JSON.stringify(order));
-}
-
-function loadCardOrder() {
-    const saved = localStorage.getItem('cardOrder');
-    if (!saved) return;
-    
-    try {
-        const order = JSON.parse(saved);
-        const grid = document.querySelector('.grid');
-        if (!grid) return;
-        
-        order.forEach(cardId => {
-            const card = grid.querySelector(`[data-card-id="${cardId}"]`);
-            if (card) {
-                grid.appendChild(card);
-            }
-        });
-    } catch (e) {
-        console.error('Error loading card order:', e);
-    }
-}
-
-// Card Width Management
-// Width options: narrow (2 cols, 1 internal), default (3 cols, 2 internal), third (4 cols, 2 internal), wide (6 cols, 3 internal)
-window.cycleCardWidth = function(button) {
-    const card = button.closest('.card');
-    if (!card) return;
-    
-    // Cycle: narrow -> default -> third -> wide -> narrow
-    const widthClasses = ['narrow', '', 'third', 'wide'];
-    
-    let currentIndex = 0;
-    if (card.classList.contains('narrow')) currentIndex = 0;
-    else if (card.classList.contains('third')) currentIndex = 2;
-    else if (card.classList.contains('wide')) currentIndex = 3;
-    else currentIndex = 1; // default (no class)
-    
-    // Cycle to next width
-    const nextIndex = (currentIndex + 1) % widthClasses.length;
-    
-    // Remove all width classes
-    card.classList.remove('narrow', 'third', 'wide', 'single');
-    
-    // Add new width class if not default
-    if (widthClasses[nextIndex]) {
-        card.classList.add(widthClasses[nextIndex]);
-    }
-    
-    saveCardWidths();
-};
-
-function saveCardWidths() {
-    const cards = document.querySelectorAll('.card[data-card-id]');
-    const widths = {};
-    
-    cards.forEach(card => {
-        const id = card.dataset.cardId;
-        if (card.classList.contains('single')) widths[id] = 'single';
-        else if (card.classList.contains('narrow')) widths[id] = 'narrow';
-        else if (card.classList.contains('third')) widths[id] = 'third';
-        else if (card.classList.contains('wide')) widths[id] = 'wide';
-        else widths[id] = 'default';
-    });
-    
-    localStorage.setItem('cardWidths', JSON.stringify(widths));
-}
-
-function loadCardWidths() {
-    const saved = localStorage.getItem('cardWidths');
-    if (!saved) return;
-    
-    try {
-        const widths = JSON.parse(saved);
-        Object.keys(widths).forEach(cardId => {
-            const card = document.querySelector(`[data-card-id="${cardId}"]`);
-            if (card && widths[cardId] !== 'default') {
-                card.classList.remove('narrow', 'third', 'wide', 'single');
-                card.classList.add(widths[cardId]);
-            }
-        });
-    } catch (e) {
-        console.error('Error loading card widths:', e);
-    }
-}
-
-// Reset all stored settings and reload
-window.resetAllSettings = function() {
-    if (confirm('This will reset all settings, card positions, card widths, and dark mode preference. Are you sure?')) {
-        localStorage.removeItem('poolSettings');
-        localStorage.removeItem('cardOrder');
-        localStorage.removeItem('cardWidths');
-        localStorage.removeItem('darkMode');
-        showNotification('All settings reset. Reloading...', 'success');
-        setTimeout(() => window.location.reload(), 1000);
-    }
-};
 
 let pool = null;
 let autoRefreshInterval = null;
 
-// Load saved settings from localStorage
-function loadSettings() {
-    const saved = localStorage.getItem('poolSettings');
-    if (saved) {
-        try {
-            const settings = JSON.parse(saved);
-            const hostEl = document.getElementById('host');
-            const portEl = document.getElementById('port');
-            const usernameEl = document.getElementById('username');
-            const passwordEl = document.getElementById('password');
-            const autoRefreshEl = document.getElementById('auto-refresh-toggle');
-            const refreshIntervalEl = document.getElementById('refresh-interval');
-            
-            if (hostEl && settings.host) hostEl.value = settings.host;
-            if (portEl && settings.port) portEl.value = settings.port;
-            if (usernameEl && settings.username) usernameEl.value = settings.username;
-            if (passwordEl && settings.password) passwordEl.value = settings.password;
-            if (autoRefreshEl && settings.autoRefresh !== undefined) {
-                autoRefreshEl.checked = settings.autoRefresh;
-            }
-            if (refreshIntervalEl && settings.refreshInterval) {
-                refreshIntervalEl.value = settings.refreshInterval;
-            }
-            return settings;
-        } catch (e) {
-            console.error('Error loading settings:', e);
-        }
-    }
-    updateRefreshButtonVisibility();
-    return null;
-}
-
-// Save settings to localStorage
-function saveSettings() {
-    const settings = {
-        host: document.getElementById('host').value,
-        port: document.getElementById('port').value,
-        username: document.getElementById('username').value,
-        password: document.getElementById('password').value,
-        autoRefresh: document.getElementById('auto-refresh-toggle').checked,
-        refreshInterval: document.getElementById('refresh-interval').value
-    };
-    localStorage.setItem('poolSettings', JSON.stringify(settings));
-}
-
-// Show/hide refresh button based on auto-refresh state
-function updateRefreshButtonVisibility() {
-    const autoRefreshOn = document.getElementById('auto-refresh-toggle')?.checked;
-    const refreshBtn = document.getElementById('refresh-btn');
-    if (refreshBtn) {
-        refreshBtn.style.display = autoRefreshOn ? 'none' : 'flex';
-    }
-}
-
 // Initialize chlorine slider
-document.getElementById('chlorine-slider')?.addEventListener('input', (e) => {
+document.getElementById('chlorine-slider').addEventListener('input', (e) => {
     document.getElementById('chlorine-value').textContent = e.target.value;
 });
 
 // Connect to ESPHome device
 window.connectToDevice = async function () {
+    const host = document.getElementById('host').value;
+    const port = document.getElementById('port').value;
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    // Determine if we need proxy (only on localhost dev server)
     const currentHost = window.location.hostname;
     const needsProxy = currentHost === 'localhost' || currentHost === '127.0.0.1' || currentHost === '';
 
@@ -351,65 +135,113 @@ window.connectToDevice = async function () {
             port: parseInt(port) || 80,
             username: username || undefined,
             password: password || undefined,
-            useProxy: needsProxy,
+            useProxy: needsProxy, // Only use proxy on dev server
         });
 
+        // Test connection by getting pump status
         await pool.pump.getPumpRunning();
 
-        const connStatus = document.getElementById('connection-status');
-        connStatus.innerHTML = '<i class="mdi mdi-check-circle"></i> Online';
-        connStatus.className = 'conn-badge online';
+        // Update UI
+        document.getElementById('connection-status').textContent = 'Connected';
+        document.getElementById('connection-status').className = 'status-connected';
         document.getElementById('connect-btn').disabled = true;
         document.getElementById('disconnect-btn').disabled = false;
 
-        document.getElementById('offline-state').classList.add('hidden');
-        document.getElementById('dashboard').classList.remove('hidden');
-        document.getElementById('settings-overlay').classList.add('hidden');
+        // Hide configuration section
+        document.getElementById('configuration-section').style.display = 'none';
 
+        // Show all sections
+        showAllSections();
+
+        // Initial data load
         await refreshAll();
+
         showNotification('Connected successfully!', 'success');
-        
-        // Save settings
-        saveSettings();
-        
-        // Start auto-refresh if enabled
-        if (document.getElementById('auto-refresh-toggle')?.checked) {
-            const interval = parseInt(document.getElementById('refresh-interval').value) * 1000;
-            autoRefreshInterval = setInterval(refreshAll, interval);
-        }
-        updateRefreshButtonVisibility();
     } catch (error) {
         console.error('Connection error:', error);
         showNotification('Connection failed: ' + error.message, 'error');
     }
 };
 
+// Disconnect
 window.disconnectFromDevice = function () {
     pool = null;
-    const connStatus = document.getElementById('connection-status');
-    connStatus.innerHTML = '<i class="mdi mdi-wifi-off"></i> Offline';
-    connStatus.className = 'conn-badge offline';
+    document.getElementById('connection-status').textContent = 'Disconnected';
+    document.getElementById('connection-status').className = 'status-disconnected';
     document.getElementById('connect-btn').disabled = false;
     document.getElementById('disconnect-btn').disabled = true;
 
-    document.getElementById('offline-state').classList.remove('hidden');
-    document.getElementById('dashboard').classList.add('hidden');
+    // Show configuration section
+    document.getElementById('configuration-section').style.display = 'block';
 
+    // Hide all sections
+    hideAllSections();
+
+    // Stop auto-refresh
     if (autoRefreshInterval) {
         clearInterval(autoRefreshInterval);
         autoRefreshInterval = null;
-        const toggle = document.getElementById('auto-refresh-toggle');
-        if (toggle) toggle.checked = false;
+        document.getElementById('auto-refresh-toggle').checked = false;
     }
 
     showNotification('Disconnected', 'info');
 };
 
-window.toggleSettings = function () {
-    const overlay = document.getElementById('settings-overlay');
-    overlay.classList.toggle('hidden');
+// Toggle Configuration Section
+window.toggleConfiguration = function () {
+    const configSection = document.getElementById('configuration-section');
+    if (configSection.style.display === 'none') {
+        configSection.style.display = 'block';
+    } else {
+        configSection.style.display = 'none';
+    }
 };
 
+// Show all sections
+function showAllSections() {
+    const sections = [
+        'pump-status-section',
+        'temperatures-section',
+        'alarms-section',
+        'chlorinator-section',
+        'pump-mode-section',
+        'pump-speeds-section',
+        'pool-light-section',
+        'switches-section',
+        'schedule-overview-section',
+        //        'schedules-section',
+        'maintenance-section',
+        'auto-refresh-section',
+        'system-section'
+    ];
+    sections.forEach(id => {
+        document.getElementById(id).style.display = 'block';
+    });
+}
+
+// Hide all sections
+function hideAllSections() {
+    const sections = [
+        'pump-status-section',
+        'temperatures-section',
+        'alarms-section',
+        'chlorinator-section',
+        'pump-mode-section',
+        'pump-speeds-section',
+        'pool-light-section',
+        'switches-section',
+        'schedule-overview-section',
+        'schedules-section',
+        'maintenance-section',
+        'auto-refresh-section',
+        'system-section'
+    ];
+    sections.forEach(id => {
+        document.getElementById(id).style.display = 'none';
+    });
+}
+
+// Refresh all data
 async function refreshAll() {
     await Promise.all([
         refreshSystemInfo(),
@@ -421,11 +253,13 @@ async function refreshAll() {
         refreshPumpSpeeds(),
         refreshPoolLight(),
         refreshSwitches(),
+        refreshScheduleStatuses(),
+        refreshScheduleSettings(),
         refreshScheduleOverview()
     ]);
 }
-window.refreshAll = refreshAll;
 
+// Refresh System Info
 window.refreshSystemInfo = async function () {
     if (!pool) return;
     try {
@@ -439,25 +273,22 @@ window.refreshSystemInfo = async function () {
     }
 };
 
+// Refresh Pump Status
 window.refreshPumpStatus = async function () {
     if (!pool) return;
     try {
         const pumpRunning = await pool.pump.getPumpRunning();
         updateStatusBadge('pump-running', pumpRunning);
-        updateQuickControl('qc-pump', pumpRunning);
 
         const pumpStatus = await pool.pump.getPumpStatus();
         updateStatusBadge('pump-status', pumpStatus);
 
         const metrics = await pool.pump.getPumpMetrics();
-        document.getElementById('pump-rpm').textContent = metrics.pumpRpm ?? '--';
-        document.getElementById('pump-power').textContent = metrics.power ?? '--';
-        document.getElementById('pump-flow').textContent = metrics.flowM3H ?? '--';
+        document.getElementById('pump-rpm').textContent = metrics.pumpRpm;
+        document.getElementById('pump-power').textContent = metrics.power;
+        document.getElementById('pump-flow').textContent = metrics.flowM3H;
         document.getElementById('pump-pressure').textContent = metrics.pressure ? metrics.pressure.toFixed(2) + ' bar' : 'N/A';
-        document.getElementById('time-remaining').textContent = metrics.timeRemaining ?? '--';
-        
-        const pumpStat = document.getElementById('pump-stat');
-        if (pumpStat) pumpStat.classList.toggle('running', pumpRunning);
+        document.getElementById('time-remaining').textContent = metrics.timeRemaining;
 
         try {
             const program = await pool.pump.getPumpProgram();
@@ -476,6 +307,7 @@ window.refreshPumpStatus = async function () {
     }
 };
 
+// Refresh Temperatures
 window.refreshTemperatures = async function () {
     if (!pool) return;
     try {
@@ -494,6 +326,7 @@ window.refreshTemperatures = async function () {
     }
 };
 
+// Refresh Alarms
 window.refreshAlarms = async function () {
     if (!pool) return;
     try {
@@ -506,39 +339,21 @@ window.refreshAlarms = async function () {
         updateAlarm('alarm-low-voltage', alarms.lowVoltageAlarm);
         updateAlarm('alarm-low-temp', alarms.lowTemperatureAlarm);
         updateAlarm('alarm-check-pcb', alarms.checkPcb);
-        
-        // Update alarm banner
-        const activeAlarms = [];
-        if (alarms.noFlowAlarm === true || alarms.noFlowAlarm === 'ON') activeAlarms.push('No Flow');
-        if (alarms.lowSaltAlarm === true || alarms.lowSaltAlarm === 'ON') activeAlarms.push('Low Salt');
-        if (alarms.highSaltAlarm === true || alarms.highSaltAlarm === 'ON') activeAlarms.push('High Salt');
-        if (alarms.cleanCellRequired === true || alarms.cleanCellRequired === 'ON') activeAlarms.push('Clean Cell');
-        if (alarms.highCurrentAlarm === true || alarms.highCurrentAlarm === 'ON') activeAlarms.push('High Current');
-        if (alarms.lowVoltageAlarm === true || alarms.lowVoltageAlarm === 'ON') activeAlarms.push('Low Voltage');
-        if (alarms.lowTemperatureAlarm === true || alarms.lowTemperatureAlarm === 'ON') activeAlarms.push('Low Temp');
-        if (alarms.checkPcb === true || alarms.checkPcb === 'ON') activeAlarms.push('Check PCB');
-        
-        const banner = document.getElementById('alarm-banner');
-        if (banner) {
-            banner.classList.toggle('hidden', activeAlarms.length === 0);
-            if (activeAlarms.length > 0) {
-                document.getElementById('alarm-message').textContent = activeAlarms.join(', ');
-            }
-        }
     } catch (error) {
         console.log('Chlorinator not available:', error.message);
+        // Hide alarm section if chlorinator not present
     }
 };
 
+// Refresh Chlorinator
 window.refreshChlorinator = async function () {
     if (!pool) return;
     try {
         const metrics = await pool.chlorinator.getChlorinatorMetrics();
-        document.getElementById('salt-level').textContent = metrics.saltLevel ?? 'N/A';
-        document.getElementById('chlor-temp').textContent = metrics.chlorinatorTemperature ? metrics.chlorinatorTemperature + '°' : 'N/A';
-        document.getElementById('chlorinator-status').textContent = metrics.chlorinatorStatus ?? 'N/A';
-        document.getElementById('chlorinator-error').textContent = metrics.chlorinatorError ?? 'N/A';
-        document.getElementById('chlorinator-output').textContent = metrics.chlorinatorOutput ?? 'N/A';
+        document.getElementById('salt-level').textContent = metrics.saltLevel;
+        document.getElementById('chlorinator-status').textContent = metrics.chlorinatorStatus;
+        document.getElementById('chlorinator-error').textContent = metrics.chlorinatorError;
+        document.getElementById('chlorinator-output').textContent = metrics.chlorinatorOutput;
 
         const version = await pool.chlorinator.getChlorinatorVersion();
         document.getElementById('chlorinator-version').textContent = version;
@@ -548,15 +363,16 @@ window.refreshChlorinator = async function () {
         document.getElementById('chlorine-value').textContent = output;
     } catch (error) {
         console.log('Chlorinator not available:', error.message);
+        // Set N/A for all chlorinator fields
         document.getElementById('salt-level').textContent = 'N/A';
-        document.getElementById('chlor-temp').textContent = 'N/A';
-        document.getElementById('chlorinator-status').textContent = 'N/A';
+        document.getElementById('chlorinator-status').textContent = 'Not Installed';
         document.getElementById('chlorinator-error').textContent = 'N/A';
         document.getElementById('chlorinator-output').textContent = 'N/A';
         document.getElementById('chlorinator-version').textContent = 'N/A';
     }
 };
 
+// Refresh Pump Mode
 window.refreshPumpMode = async function () {
     if (!pool) return;
     try {
@@ -568,6 +384,7 @@ window.refreshPumpMode = async function () {
     }
 };
 
+// Refresh Pump Speeds
 window.refreshPumpSpeeds = async function () {
     if (!pool) return;
     try {
@@ -580,21 +397,24 @@ window.refreshPumpSpeeds = async function () {
     }
 };
 
+// Refresh Pool Light
 window.refreshPoolLight = async function () {
     if (!pool) return;
     try {
+        // Refresh pool light power switch
         const poolLight = await pool.light.getPoolLightState();
         const btn = document.getElementById('switch-pool-light');
         const isOn = poolLight === true || poolLight === 'ON';
         btn.textContent = isOn ? 'ON' : 'OFF';
-        btn.className = 'tog-btn ' + (isOn ? 'on' : 'off');
-        updateQuickControl('qc-light', isOn);
+        btn.className = isOn ? 'btn btn-toggle on' : 'btn btn-toggle off';
 
+        // Refresh pool light mode (may not exist on all devices)
         try {
             const mode = await pool.light.getLightMode();
             document.getElementById('light-mode-select').value = mode;
             document.getElementById('current-light-mode').textContent = mode;
         } catch (modeError) {
+            // Light mode not available on this device
             console.log('Light mode not available:', modeError.message);
         }
     } catch (error) {
@@ -602,26 +422,31 @@ window.refreshPoolLight = async function () {
     }
 };
 
+// Refresh Switches
 window.refreshSwitches = async function () {
     if (!pool) return;
     try {
+        // Get waterfall state
         const waterfall = await pool.pump.getWaterfall();
         updateToggleButton('switch-waterfall', waterfall);
-        updateQuickControl('qc-waterfall', waterfall);
 
+        // Get waterfall auto state
         const waterfallAuto = await pool.pump.getWaterfallAuto();
         updateToggleButton('switch-waterfall-auto', waterfallAuto);
 
+        // Get auto schedule state
         const autoSchedule = await pool.pump.getAutoSchedule();
         updateToggleButton('switch-auto-schedule', autoSchedule);
-        updateQuickControl('qc-schedule', autoSchedule);
 
+        // Get takeover mode
         const takeover = await pool.pump.getTakeoverMode();
         updateToggleButton('switch-takeover', takeover);
 
+        // Get off state
         const off = await pool.pump.getOff();
         updateToggleButton('switch-off', off);
 
+        // Get pool light mode
         const lightMode = await pool.light.getLightMode();
         document.getElementById('current-light-mode').textContent = lightMode;
         document.getElementById('light-mode-select').value = lightMode;
@@ -630,9 +455,63 @@ window.refreshSwitches = async function () {
     }
 };
 
+// Refresh Schedule Statuses
+window.refreshScheduleStatuses = async function () {
+    if (!pool) return;
+    try {
+        const statuses = await pool.pump.getScheduleStatuses();
+        document.getElementById('schedule-1-status').textContent = statuses.schedule1Status;
+        document.getElementById('schedule-2-status').textContent = statuses.schedule2Status;
+        document.getElementById('schedule-3-status').textContent = statuses.schedule3Status;
+        document.getElementById('schedule-4-status').textContent = statuses.schedule4Status;
+        document.getElementById('schedule-5-status').textContent = statuses.schedule5Status;
+
+        // Load schedule off status
+        const scheduleOffStatus = await pool.pump.getScheduleOffStatus();
+        document.getElementById('schedule-off-status').textContent = scheduleOffStatus;
+    } catch (error) {
+        console.error('Error refreshing schedule statuses:', error);
+    }
+};
+
+// Refresh Schedule Settings (times, speeds, waterfall)
+window.refreshScheduleSettings = async function () {
+    if (!pool) return;
+    try {
+        // Load all 5 schedules
+        for (let i = 1; i <= 5; i++) {
+            // Get start time
+            const startTime = await pool.pump.getScheduleStartTime(i);
+            const timeInput = document.getElementById(`schedule-${i}-time`);
+            if (timeInput && startTime) {
+                // Format time from HH:MM:SS to HH:MM
+                timeInput.value = startTime.substring(0, 5);
+            }
+
+            // Get speed
+            const speed = await pool.pump.getScheduleSpeed(i);
+            const speedSelect = document.getElementById(`schedule-${i}-speed`);
+            if (speedSelect && speed) {
+                speedSelect.value = speed;
+            }
+
+            // Get waterfall setting
+            const waterfall = await pool.pump.getScheduleWaterfall(i);
+            const waterfallCheckbox = document.getElementById(`schedule-${i}-waterfall`);
+            if (waterfallCheckbox) {
+                waterfallCheckbox.checked = waterfall;
+            }
+        }
+    } catch (error) {
+        console.error('Error refreshing schedule settings:', error);
+    }
+};
+
+// Refresh Schedule Overview
 window.refreshScheduleOverview = async function () {
     if (!pool) return;
     try {
+        // Helper function to convert 24-hour time to 12-hour format
         const convertTo12Hour = (time24) => {
             const [hours, minutes] = time24.split(':');
             let h = parseInt(hours);
@@ -641,40 +520,57 @@ window.refreshScheduleOverview = async function () {
             return `${h}:${minutes} ${ampm}`;
         };
 
+        // Load header labels - these are not in modular API yet, use placeholders
+        document.getElementById('blank-label').textContent = '';
+        document.getElementById('start-label').textContent = 'Start';
+        document.getElementById('speed-label').textContent = 'Speed';
+        document.getElementById('rpm-label').textContent = 'RPM';
+        document.getElementById('waterfall-label').textContent = 'Waterfall';
+
+        // Get all schedule data
         const scheduleStatuses = await pool.pump.getScheduleStatuses();
         const scheduleRpms = await pool.pump.getScheduleRpms();
 
+        // Load all 5 schedules data
         for (let i = 1; i <= 5; i++) {
+            // Status
             const statusKey = `schedule${i}Status`;
             const statusText = scheduleStatuses[statusKey] ?? '';
             document.getElementById(`schedule-${i}-status-tbl`).textContent = statusText;
 
+            // Start time - convert to 12-hour format
             const startTime = await pool.pump.getScheduleStartTime(i);
             document.getElementById(`schedule-${i}-start-tbl`).textContent = convertTo12Hour(startTime.substring(0, 5));
 
+            // Speed
             const speed = await pool.pump.getScheduleSpeed(i);
             document.getElementById(`schedule-${i}-speed-tbl`).textContent = speed;
 
+            // RPM
             const rpmKey = `schedule${i}Rpm`;
             document.getElementById(`schedule-${i}-rpm-tbl`).textContent = scheduleRpms[rpmKey] || '0';
 
+            // Waterfall - display as text
             const waterfall = await pool.pump.getScheduleWaterfall(i);
             const waterfallSpan = document.getElementById(`schedule-${i}-waterfall-tbl`);
             const isOn = waterfall === true || waterfall === 'ON';
             waterfallSpan.textContent = isOn ? 'ON' : 'OFF';
-            waterfallSpan.className = 'wf-badge ' + (isOn ? 'on' : 'off');
+            waterfallSpan.className = isOn ? 'waterfall-status on' : 'waterfall-status off';
         }
 
+        // Footer - Schedule off status and pump end time
         const scheduleOffStatus = await pool.pump.getScheduleOffStatus();
         document.getElementById('schedule-off-status-tbl').textContent = scheduleOffStatus;
 
         const pumpEndTime = await pool.pump.getPumpEndTime();
         document.getElementById('pump-end-time-tbl').textContent = convertTo12Hour(pumpEndTime.substring(0, 5));
+
     } catch (error) {
         console.error('Error refreshing schedule overview:', error);
     }
 };
 
+// Set Chlorine Output
 window.setChlorineOutput = async function () {
     if (!pool) return;
     try {
@@ -688,6 +584,7 @@ window.setChlorineOutput = async function () {
     }
 };
 
+// Set Pump Mode
 window.setPumpMode = async function () {
     if (!pool) return;
     try {
@@ -701,6 +598,7 @@ window.setPumpMode = async function () {
     }
 };
 
+// Set Pump Speed
 window.setPumpSpeed = async function (speedNum) {
     if (!pool) return;
     try {
@@ -713,30 +611,34 @@ window.setPumpSpeed = async function (speedNum) {
     }
 };
 
+// Adjust Pump Speed with Spinners
 window.adjustSpeed = function (speedNum, delta) {
     const input = document.getElementById(`speed-${speedNum}`);
     let currentValue = parseInt(input.value) || 450;
     let newValue = currentValue + delta;
+
+    // Enforce min/max bounds
     const min = parseInt(input.min) || 450;
     const max = parseInt(input.max) || 3450;
+
     newValue = Math.max(min, Math.min(max, newValue));
     input.value = newValue;
 };
 
+// Toggle Switch
 window.toggleSwitch = async function (switchId, button) {
     if (!pool) return;
     try {
+        // Map switch IDs to API methods
         if (switchId === 'waterfall') {
             await pool.pump.toggleWaterfall();
             const state = await pool.pump.getWaterfall();
             updateToggleButton(button.id, state);
-            updateQuickControl('qc-waterfall', state);
             showNotification(`Waterfall toggled ${state ? 'ON' : 'OFF'}`, 'success');
         } else if (switchId === 'pool_light') {
             await pool.light.togglePoolLight();
             const state = await pool.light.getPoolLightState();
             updateToggleButton(button.id, state);
-            updateQuickControl('qc-light', state);
             showNotification(`Pool light toggled ${state ? 'ON' : 'OFF'}`, 'success');
         } else if (switchId === 'takeover_mode') {
             await pool.pump.toggleTakeoverMode();
@@ -752,7 +654,6 @@ window.toggleSwitch = async function (switchId, button) {
             await pool.pump.toggleAutoSchedule();
             const state = await pool.pump.getAutoSchedule();
             updateToggleButton(button.id, state);
-            updateQuickControl('qc-schedule', state);
             showNotification(`Auto schedule toggled ${state ? 'ON' : 'OFF'}`, 'success');
         } else if (switchId === 'off') {
             await pool.pump.toggleOff();
@@ -768,28 +669,136 @@ window.toggleSwitch = async function (switchId, button) {
     }
 };
 
-window.toggleQuickPump = async function () {
+// Set Schedule
+window.setSchedule = async function (scheduleNum) {
     if (!pool) return;
     try {
-        const running = await pool.pump.getPumpRunning();
-        if (running) {
-            await pool.pump.stopPump();
-            showNotification('Pump stopped', 'success');
-        } else {
-            await pool.pump.runPump();
-            showNotification('Pump started', 'success');
-        }
-        setTimeout(() => refreshPumpStatus(), 1000);
+        const time = document.getElementById(`schedule-${scheduleNum}-time`).value + ':00';
+        const speed = document.getElementById(`schedule-${scheduleNum}-speed`).value;
+        const waterfall = document.getElementById(`schedule-${scheduleNum}-waterfall`).checked;
+
+        await pool.pump.setScheduleStartTime(scheduleNum, time);
+        await pool.pump.setScheduleSpeed(scheduleNum, speed);
+        await pool.pump.setScheduleWaterfall(scheduleNum, waterfall);
+
+        showNotification(`Schedule ${scheduleNum} configured`, 'success');
+        await refreshScheduleStatuses();
     } catch (error) {
-        console.error('Error toggling pump:', error);
-        showNotification('Error toggling pump', 'error');
+        console.error('Error setting schedule:', error);
+        showNotification('Error setting schedule', 'error');
     }
 };
 
+// Sync Pump Clock
+window.syncPumpClock = async function () {
+    if (!pool) return;
+    try {
+        await pool.pump.syncPumpClock();
+        showNotification('Pump clock synced', 'success');
+        await refreshPumpStatus();
+    } catch (error) {
+        console.error('Error syncing pump clock:', error);
+        showNotification('Error syncing pump clock', 'error');
+    }
+};
+
+// Request Pump Status
+window.requestPumpStatus = async function () {
+    if (!pool) return;
+    try {
+        await pool.pump.requestPumpStatus();
+        showNotification('Pump status requested', 'success');
+        setTimeout(() => refreshPumpStatus(), 1000);
+    } catch (error) {
+        console.error('Error requesting pump status:', error);
+        showNotification('Error requesting pump status', 'error');
+    }
+};
+
+// Run Pump
+window.runPump = async function () {
+    if (!pool) return;
+    try {
+        await pool.pump.runPump();
+        showNotification('Pump started', 'success');
+        setTimeout(() => refreshPumpStatus(), 1000);
+    } catch (error) {
+        console.error('Error running pump:', error);
+        showNotification('Error running pump', 'error');
+    }
+};
+
+// Stop Pump
+window.stopPump = async function () {
+    if (!pool) return;
+    try {
+        await pool.pump.stopPump();
+        showNotification('Pump stopped', 'success');
+        setTimeout(() => refreshPumpStatus(), 1000);
+    } catch (error) {
+        console.error('Error stopping pump:', error);
+        showNotification('Error stopping pump', 'error');
+    }
+};
+
+// Pump to Local Control
+window.pumpToLocalControl = async function () {
+    if (!pool) return;
+    try {
+        await pool.pump.pumpToLocalControl();
+        showNotification('Pump set to local control', 'success');
+        setTimeout(() => refreshPumpStatus(), 1000);
+    } catch (error) {
+        console.error('Error setting pump to local control:', error);
+        showNotification('Error setting pump to local control', 'error');
+    }
+};
+
+// Pump to Remote Control
+window.pumpToRemoteControl = async function () {
+    if (!pool) return;
+    try {
+        await pool.pump.pumpToRemoteControl();
+        showNotification('Pump set to remote control', 'success');
+        setTimeout(() => refreshPumpStatus(), 1000);
+    } catch (error) {
+        console.error('Error setting pump to remote control:', error);
+        showNotification('Error setting pump to remote control', 'error');
+    }
+};
+
+// Run Local Program
+window.runLocalProgram = async function (programNum) {
+    if (!pool) return;
+    try {
+        await pool.pump.runLocalProgram(programNum);
+        showNotification(`Local Program ${programNum} started`, 'success');
+        setTimeout(() => refreshPumpStatus(), 1000);
+    } catch (error) {
+        console.error(`Error running local program ${programNum}:`, error);
+        showNotification(`Error running local program ${programNum}`, 'error');
+    }
+};
+
+// Run External Program
+window.runExternalProgram = async function (programNum) {
+    if (!pool) return;
+    try {
+        await pool.pump.runExternalProgram(programNum);
+        showNotification(`External Program ${programNum} started`, 'success');
+        setTimeout(() => refreshPumpStatus(), 1000);
+    } catch (error) {
+        console.error(`Error running external program ${programNum}:`, error);
+        showNotification(`Error running external program ${programNum}`, 'error');
+    }
+};
+
+// Set Light Mode
 window.setLightMode = async function () {
     if (!pool) return;
     const mode = document.getElementById('light-mode-select').value;
     if (!mode) return;
+
     try {
         await pool.light.setLightMode(mode);
         showNotification(`Light mode set to ${mode}`, 'success');
@@ -800,6 +809,7 @@ window.setLightMode = async function () {
     }
 };
 
+// Refresh Chlorinator Action
 window.refreshChlorinatorAction = async function () {
     if (!pool) return;
     try {
@@ -812,6 +822,7 @@ window.refreshChlorinatorAction = async function () {
     }
 };
 
+// Toggle Auto Refresh
 window.toggleAutoRefresh = function () {
     const enabled = document.getElementById('auto-refresh-toggle').checked;
     const interval = parseInt(document.getElementById('refresh-interval').value) * 1000;
@@ -826,48 +837,44 @@ window.toggleAutoRefresh = function () {
         }
         showNotification('Auto-refresh disabled', 'info');
     }
-    saveSettings();
-    updateRefreshButtonVisibility();
-};
-
-window.dismissAlarm = function () {
-    document.getElementById('alarm-banner')?.classList.add('hidden');
 };
 
 // Helper Functions
 function updateStatusBadge(elementId, state) {
     const element = document.getElementById(elementId);
-    if (!element) return;
+    // Handle both boolean and string states
     const isOn = state === true || state === 'ON' || state === 'on';
     element.textContent = isOn ? 'ON' : 'OFF';
-    element.className = 'pill ' + (isOn ? 'on' : 'off');
+    element.className = 'status-badge ' + (isOn ? 'on' : 'off');
 }
 
 function updateAlarm(elementId, active) {
     const element = document.getElementById(elementId);
-    if (!element) return;
+    // Handle both boolean and string states
     const isActive = active === true || active === 'ON' || active === 'on';
-    element.classList.toggle('active', isActive);
+    if (isActive) {
+        element.classList.add('active');
+    } else {
+        element.classList.remove('active');
+    }
 }
 
 function updateToggleButton(elementId, state) {
     const button = document.getElementById(elementId);
     if (!button) return;
-    const isOn = state === true || state === 'ON' || state === 'on';
-    button.textContent = isOn ? 'ON' : 'OFF';
-    button.className = 'tog-btn ' + (isOn ? 'on' : 'off');
-}
 
-function updateQuickControl(elementId, state) {
-    const qc = document.getElementById(elementId);
-    if (!qc) return;
+    // Handle both boolean and string states
     const isOn = state === true || state === 'ON' || state === 'on';
-    qc.classList.toggle('active', isOn);
-    const statusSpan = document.getElementById(elementId + '-status');
-    if (statusSpan) statusSpan.textContent = isOn ? 'ON' : 'OFF';
+
+    button.textContent = isOn ? 'ON' : 'OFF';
+    button.className = 'btn btn-toggle ' + (isOn ? 'on' : 'off');
 }
 
 function showNotification(message, type = 'info') {
+    const emoji = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+    console.log(`${emoji} ${message}`);
+
+    // Create toast container if it doesn't exist
     let container = document.getElementById('toast-container');
     if (!container) {
         container = document.createElement('div');
@@ -876,75 +883,91 @@ function showNotification(message, type = 'info') {
         document.body.appendChild(container);
     }
 
+    // Create toast element
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    const icon = type === 'success' ? 'mdi-check-circle' : type === 'error' ? 'mdi-alert-circle' : type === 'warning' ? 'mdi-alert' : 'mdi-information';
-    toast.innerHTML = `<i class="mdi ${icon}"></i><span>${message}</span><button class="toast-close" onclick="this.parentElement.remove()"><i class="mdi mdi-close"></i></button>`;
+    toast.innerHTML = `
+        <span class="toast-icon">${emoji}</span>
+        <span class="toast-message">${message}</span>
+        <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+    `;
+
     container.appendChild(toast);
 
+    // Auto remove after 4 seconds
     setTimeout(() => {
         toast.classList.add('hiding');
-        setTimeout(() => toast.remove(), 200);
+        setTimeout(() => toast.remove(), 300);
     }, 4000);
 }
 
-// Auto-connect
+// Auto-connect if API is available on same host
 async function checkAndAutoConnect() {
-    const savedSettings = loadSettings();
     const currentHost = window.location.hostname;
-    
-    // Use saved host or current host
-    const hostToUse = savedSettings?.host || currentHost;
-    const portToUse = savedSettings?.port || 80;
-    
-    // Update host field if no saved settings
-    const hostEl = document.getElementById('host');
-    if (hostEl && !savedSettings?.host) hostEl.value = currentHost;
+    const defaultPort = 80;
 
-    // Skip auto-connect if on localhost/development server and no saved settings
-    if ((currentHost === 'localhost' || currentHost === '127.0.0.1' || currentHost === '') && !savedSettings?.host) {
-        console.log('Development mode - opening settings');
-        document.getElementById('settings-overlay').classList.remove('hidden');
+    // Pre-fill host field
+    document.getElementById('host').value = currentHost;
+
+    // Skip auto-connect if on localhost/development server
+    if (currentHost === 'localhost' || currentHost === '127.0.0.1' || currentHost === '') {
+        console.log('Development mode - skipping auto-connect');
         return;
     }
 
     try {
+        // Create a test client - no proxy needed when on same host as API
         const testClient = createPoolClient({
-            host: hostToUse,
-            port: parseInt(portToUse) || 80,
-            useProxy: currentHost === 'localhost' || currentHost === '127.0.0.1' || currentHost === ''
+            host: currentHost,
+            port: defaultPort,
+            useProxy: false  // Direct connection when on same host
         });
+
+        // Try to get pump status to verify API is available
         await testClient.pump.getPumpRunning();
+
+        // API is available, auto-connect
         await connectToDevice();
-        console.log('Auto-connected to API');
+        console.log('Auto-connected to API on same host');
     } catch (error) {
-        // API not available - open settings
-        console.log('Auto-connect failed, opening settings');
-        document.getElementById('settings-overlay').classList.remove('hidden');
+        // API not available on same host, show connection form - silent failure
     }
 }
 
 // Event Listeners
-document.getElementById('connect-btn')?.addEventListener('click', connectToDevice);
-document.getElementById('disconnect-btn')?.addEventListener('click', disconnectFromDevice);
+document.getElementById('connect-btn').addEventListener('click', connectToDevice);
+document.getElementById('disconnect-btn').addEventListener('click', disconnectFromDevice);
 
-// Dark Mode
+// Check for auto-connect on page load
+window.addEventListener('DOMContentLoaded', checkAndAutoConnect);
+
+// --- Dark Mode ---
 window.toggleDarkMode = function () {
-    document.body.classList.toggle('dark-mode');
-    const isDark = document.body.classList.contains('dark-mode');
+    const body = document.body;
+    body.classList.toggle('dark-mode');
+    const isDark = body.classList.contains('dark-mode');
     localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
+    updateDarkModeButton(isDark);
 };
 
-// Initialize
-window.addEventListener('DOMContentLoaded', () => {
-    // Dark mode
-    if (localStorage.getItem('darkMode') === 'enabled') {
-        document.body.classList.add('dark-mode');
+function updateDarkModeButton(isDark) {
+    const btn = document.getElementById('dark-mode-toggle');
+    if (btn) {
+        if (isDark) {
+            btn.innerHTML = '<i class="mdi mdi-weather-sunny"></i> Switch to Light Mode';
+        } else {
+            btn.innerHTML = '<i class="mdi mdi-weather-night"></i> Switch to Dark Mode';
+        }
     }
-    // Initialize drag and drop
-    initDragAndDrop();
-    // Load card widths
-    loadCardWidths();
-    // Auto-connect (also loads settings)
-    checkAndAutoConnect();
+}
+
+// Initialize Dark Mode
+window.addEventListener('DOMContentLoaded', () => {
+    const darkMode = localStorage.getItem('darkMode');
+    if (darkMode === 'enabled') {
+        document.body.classList.add('dark-mode');
+        updateDarkModeButton(true);
+    } else {
+        updateDarkModeButton(false);
+    }
 });

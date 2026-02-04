@@ -41,7 +41,12 @@ See [Tools/README.md](Tools/README.md) for details about the available utilities
 
 See [web-dashboard/README.md](web-dashboard/README.md) for installation and usage:
 
-- **Web Dashboard**: A modern, responsive web interface for your ESPHome pool automation system. Features real-time monitoring, pool light controls, pump configuration, chlorinator management, schedule overview, and mobile-optimized layout. Includes a complete TypeScript REST API client with type definitions for all 103 entities.
+- **Web Dashboard**: A modern, responsive web interface for your ESPHome pool automation system
+- **Features**: Real-time monitoring, pool light controls, pump configuration, chlorinator management, schedule overview
+- **Customizable Layout**: Drag-and-drop card reordering, adjustable card widths, card stacking for compact layouts
+- **Responsive Design**: Desktop (12-column grid), tablet (6-column grid), and mobile (single column) layouts
+- **Settings Management**: Connection configuration, auto-refresh with persistence, reset all settings button
+- **TypeScript REST API Client**: Full type definitions for all 103 ESPHome entities
 
 ---
 

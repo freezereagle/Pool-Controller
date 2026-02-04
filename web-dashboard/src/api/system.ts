@@ -29,11 +29,11 @@ export class SystemAPI extends BaseESPHomeClient {
         ]);
 
         return {
-            esphomeVersion: version.state,
-            ssid: ssid.state,
-            ipAddress: ip.state,
-            wifiSignal: signal.state,
-            uptime: uptime.state,
+            esphomeVersion: version.value,
+            ssid: ssid.value,
+            ipAddress: ip.value,
+            wifiSignal: signal.value,
+            uptime: uptime.value,
         };
     }
 
@@ -41,39 +41,39 @@ export class SystemAPI extends BaseESPHomeClient {
      * Get ESPHome version
      */
     async getEsphomeVersion(): Promise<string> {
-        const state = await this.request<TextSensorState>('/text_sensor/esphome_version');
-        return state.state;
+        const response = await this.request<TextSensorState>('/text_sensor/esphome_version');
+        return response.value;
     }
 
     /**
      * Get WiFi SSID
      */
     async getSsid(): Promise<string> {
-        const state = await this.request<TextSensorState>('/text_sensor/ssid');
-        return state.state;
+        const response = await this.request<TextSensorState>('/text_sensor/ssid');
+        return response.value;
     }
 
     /**
      * Get IP Address
      */
     async getIpAddress(): Promise<string> {
-        const state = await this.request<TextSensorState>('/text_sensor/ip_address');
-        return state.state;
+        const response = await this.request<TextSensorState>('/text_sensor/ip_address');
+        return response.value;
     }
 
     /**
      * Get WiFi Signal Strength (dBm)
      */
     async getWifiSignal(): Promise<number> {
-        const state = await this.request<SensorState>('/sensor/wifi_signal');
-        return state.state;
+        const response = await this.request<SensorState>('/sensor/wifi_signal');
+        return response.value;
     }
 
     /**
      * Get System Uptime (seconds)
      */
     async getUptime(): Promise<number> {
-        const state = await this.request<SensorState>('/sensor/uptime');
-        return state.state;
+        const response = await this.request<SensorState>('/sensor/uptime');
+        return response.value;
     }
 }

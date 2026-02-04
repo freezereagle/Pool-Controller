@@ -42,11 +42,11 @@ export class ChlorinatorAPI extends BaseESPHomeClient {
     ]);
 
     return {
-      saltLevel: salt.state,
-      chlorinatorTemperature: temp.state,
-      chlorinatorStatus: status.state,
-      chlorinatorError: error.state,
-      chlorinatorOutput: output.state,
+      saltLevel: salt.value,
+      chlorinatorTemperature: temp.value,
+      chlorinatorStatus: status.value,
+      chlorinatorError: error.value,
+      chlorinatorOutput: output.value,
     };
   }
 
@@ -54,40 +54,40 @@ export class ChlorinatorAPI extends BaseESPHomeClient {
    * Get salt level (ppm)
    */
   async getSaltLevel(): Promise<number> {
-    const state = await this.request<SensorState>('/sensor/salt_level');
-    return state.state;
+    const response = await this.request<SensorState>('/sensor/salt_level');
+    return response.value;
   }
 
   /**
    * Get chlorinator water temperature
    */
   async getChlorinatorTemperature(): Promise<number> {
-    const state = await this.request<SensorState>('/sensor/chlorinator_water_temperature');
-    return state.state;
+    const response = await this.request<SensorState>('/sensor/chlorinator_water_temperature');
+    return response.value;
   }
 
   /**
    * Get chlorinator status code
    */
   async getChlorinatorStatus(): Promise<number> {
-    const state = await this.request<SensorState>('/sensor/chlorinator_status');
-    return state.state;
+    const response = await this.request<SensorState>('/sensor/chlorinator_status');
+    return response.value;
   }
 
   /**
    * Get chlorinator error code
    */
   async getChlorinatorError(): Promise<number> {
-    const state = await this.request<SensorState>('/sensor/chlorinator_error');
-    return state.state;
+    const response = await this.request<SensorState>('/sensor/chlorinator_error');
+    return response.value;
   }
 
   /**
    * Get current chlorinator output percentage
    */
   async getChlorinatorOutput(): Promise<number> {
-    const state = await this.request<SensorState>('/sensor/chlorinator_output__');
-    return state.state;
+    const response = await this.request<SensorState>('/sensor/chlorinator_output__');
+    return response.value;
   }
 
   // ==================== Chlorine Output Control ====================
@@ -106,8 +106,8 @@ export class ChlorinatorAPI extends BaseESPHomeClient {
    * Get chlorine output setting
    */
   async getChlorineOutputSetting(): Promise<number> {
-    const state = await this.request<NumberState>('/number/chlorine_output');
-    return state.state;
+    const response = await this.request<NumberState>('/number/chlorine_output');
+    return response.value;
   }
 
   // ==================== Chlorinator Alarms ====================
@@ -128,14 +128,14 @@ export class ChlorinatorAPI extends BaseESPHomeClient {
     ]);
 
     return {
-      noFlowAlarm: noFlow.state,
-      lowSaltAlarm: lowSalt.state,
-      highSaltAlarm: highSalt.state,
-      cleanCellRequired: cleanCell.state,
-      highCurrentAlarm: highCurrent.state,
-      lowVoltageAlarm: lowVoltage.state,
-      lowTemperatureAlarm: lowTemp.state,
-      checkPcb: checkPcb.state,
+      noFlowAlarm: noFlow.value,
+      lowSaltAlarm: lowSalt.value,
+      highSaltAlarm: highSalt.value,
+      cleanCellRequired: cleanCell.value,
+      highCurrentAlarm: highCurrent.value,
+      lowVoltageAlarm: lowVoltage.value,
+      lowTemperatureAlarm: lowTemp.value,
+      checkPcb: checkPcb.value,
     };
   }
 
@@ -145,16 +145,16 @@ export class ChlorinatorAPI extends BaseESPHomeClient {
    * Get chlorinator version information
    */
   async getChlorinatorVersion(): Promise<string> {
-    const state = await this.request<TextSensorState>('/text_sensor/chlorinator_version');
-    return state.state;
+    const response = await this.request<TextSensorState>('/text_sensor/chlorinator_version');
+    return response.value;
   }
 
   /**
    * Get chlorinator debug information
    */
   async getChlorinatorDebug(): Promise<string> {
-    const state = await this.request<TextSensorState>('/text_sensor/chlorinator_debug');
-    return state.state;
+    const response = await this.request<TextSensorState>('/text_sensor/chlorinator_debug');
+    return response.value;
   }
 
   // ==================== Maintenance ====================

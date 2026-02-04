@@ -22,8 +22,8 @@ export class PoolLightAPI extends BaseESPHomeClient {
    * Get pool light power state
    */
   async getPoolLightState(): Promise<boolean> {
-    const state = await this.request<SwitchState>('/switch/pool_light');
-    return state.state;
+    const response = await this.request<SwitchState>('/switch/pool_light');
+    return response.value;
   }
 
   /**
@@ -46,15 +46,15 @@ export class PoolLightAPI extends BaseESPHomeClient {
    * Get current pool light mode
    */
   async getLightMode(): Promise<string> {
-    const state = await this.request<SelectState>('/select/pool_light_mode');
-    return state.state;
+    const response = await this.request<SelectState>('/select/pool_light_mode');
+    return response.value;
   }
 
   /**
    * Get pool light status text
    */
   async getLightStatus(): Promise<string> {
-    const state = await this.request<{ state: string }>('/text_sensor/pool_light_status');
-    return state.state;
+    const response = await this.request<{ state: string, value: string }>('/text_sensor/pool_light_status');
+    return response.value;
   }
 }

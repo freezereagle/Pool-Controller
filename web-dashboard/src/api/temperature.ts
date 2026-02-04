@@ -29,10 +29,10 @@ export class TemperatureAPI extends BaseESPHomeClient {
     ]);
 
     return {
-      airTemperature: airC.state,
-      airTemperatureF: airF.state,
-      waterTemperature: waterC.state,
-      waterTemperatureF: waterF.state,
+      airTemperature: airC.value,
+      airTemperatureF: airF.value,
+      waterTemperature: waterC.value,
+      waterTemperatureF: waterF.value,
     };
   }
 
@@ -40,31 +40,31 @@ export class TemperatureAPI extends BaseESPHomeClient {
    * Get air temperature in Celsius
    */
   async getAirTemperature(): Promise<number> {
-    const state = await this.request<SensorState>('/sensor/air_temperature');
-    return state.state;
+    const response = await this.request<SensorState>('/sensor/air_temperature');
+    return response.value;
   }
 
   /**
    * Get air temperature in Fahrenheit
    */
   async getAirTemperatureF(): Promise<number> {
-    const state = await this.request<SensorState>('/sensor/air_temperature_f');
-    return state.state;
+    const response = await this.request<SensorState>('/sensor/air_temperature_f');
+    return response.value;
   }
 
   /**
    * Get water temperature in Celsius
    */
   async getWaterTemperature(): Promise<number> {
-    const state = await this.request<SensorState>('/sensor/water_temperature');
-    return state.state;
+    const response = await this.request<SensorState>('/sensor/water_temperature');
+    return response.value;
   }
 
   /**
    * Get water temperature in Fahrenheit
    */
   async getWaterTemperatureF(): Promise<number> {
-    const state = await this.request<SensorState>('/sensor/water_temperature_f');
-    return state.state;
+    const response = await this.request<SensorState>('/sensor/water_temperature_f');
+    return response.value;
   }
 }

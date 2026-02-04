@@ -6,7 +6,9 @@ A modern, responsive web interface for ESPHome Pool Automation system with full 
 
 ### Web Dashboard
 - Modern responsive interface with Material Design Icons
-- Mobile-optimized layout with 2-column desktop view
+- **Desktop (≥1024px)**: 12-column grid layout with intelligent card sizing
+- **Tablet (640-1024px)**: Responsive 6-column grid
+- **Mobile (<640px)**: Single column, full-width cards
 - Dedicated pool light controls with mode selection
 - Real-time temperature monitoring
 - Live pump status and control
@@ -16,7 +18,31 @@ A modern, responsive web interface for ESPHome Pool Automation system with full 
 - Switch controls for waterfall and automation
 - System information display
 - Auto-refresh with configurable interval
-- Clean, card-based layout
+
+#### Layout & Customization
+- **Card Stacking**: Stack multiple cards vertically in the same grid column (Mode + Light grouped together)
+- **Flexible Card Widths**: Adjust individual card widths by clicking the expand button (↔️)
+  - Narrow (2 grid cols)
+  - Default (3 grid cols) 
+  - Wide (4 grid cols)
+  - Extra Wide (6 grid cols)
+- **Responsive Internal Columns**: Card content automatically adjusts column layout based on card width
+  - 1 column when narrow
+  - 2 columns when default
+  - 3 columns when wide/extra-wide
+- **Drag-and-Drop Reordering**: Reorganize cards by dragging handles, layout persists across sessions
+- **Dark/Light Mode Toggle**: Save theme preference to localStorage
+- **Layout Persistence**: Card positions, sizes, and preferences saved automatically
+
+#### Settings Panel
+- Connection configuration (host, port, username, password)
+- Auto-refresh toggle with configurable interval (1-60 seconds)
+- System information display (ESPHome version, WiFi SSID, IP, signal strength)
+- **Reset All Settings**: Clears all stored data including:
+  - Connection settings
+  - Card positions and widths
+  - Dark mode preference
+  - Auto-refresh configuration
 - Authentication support
 
 ### TypeScript API Client
@@ -99,19 +125,32 @@ Run `npm run serve` and access via `http://localhost:3000`
 
 ### Dashboard Features
 
+### Dashboard Features
+
+#### Card Titles & Organization
+- **Speed Mode**: Pump mode selection with live display
+- **Pump Status**: Comprehensive pump information and controls
+- **Light**: Pool light power and color mode management
+- **Switches**: Waterfall, waterfall auto, schedule, and off controls
+- **Chlorinator**: Salt level, status, temperature, and output control
+- **IChlor Alarms**: Display for all chlorinator alarm states
+- **Schedule**: 5 programmable schedules with times and settings
+- **Speed Presets**: Quick pump speed configuration (S1-S5)
+
 #### Pool Light Section
 - Power on/off toggle
 - Mode selection (14 modes including SAm, Party, Romance, Caribbean, American, Sunset, Royalty, Blue, Green, Red, White, Magenta, Hold, Recall)
 - Current mode display
 
 #### Temperatures
-- Air temperature
-- Water temperature  
-- Chlorinator temperature
+- Air temperature (°F)
+- Water temperature (°F)
+- Chlorinator temperature (°F)
 
-#### Pump Mode
+#### Pump Mode (Speed Mode)
 - Quick mode selection (Auto, Off, Speed 1-5)
 - Current mode display
+- Resizable card (1, 2, or 3 grid columns)
 
 #### Pump Status
 - Running state and status
@@ -119,6 +158,7 @@ Run `npm run serve` and access via `http://localhost:3000`
 - Active program/mode display
 - Time remaining and pump clock
 - Current schedule display
+- Resizable card with responsive internal layout
 
 #### Maintenance Controls
 - Sync pump clock with system time
@@ -134,12 +174,80 @@ Run `npm run serve` and access via `http://localhost:3000`
 - Schedule status, start time, speed, RPM, and waterfall state
 - Pump end time display
 - Schedule off status
+- Clickable fields for editing start times and speeds
+
+#### Chlorinator Control
+- Real-time temperature monitoring
+- Status and error display
+- Chlorine output slider (0-100%)
+- Takeover mode toggle
+- Salt level monitoring
+- Chlorinator version info
+
+#### Alarms Display (IChlor Alarms)
+- No Flow
+- Low/High Salt
+- Clean Cell Required
+- High Current
+- Low Voltage
+- Low Temperature
+- Check PCB
 
 #### Responsive Layout
-- **Desktop (≥769px)**: 2-column grid layout
-- **Mobile (<769px)**: Single column, optimized padding
-- Reduced header height for more content space
-- Material Design Icons for all refresh buttons
+- **Desktop (≥1024px)**: 12-column grid with flexible card sizing
+  - Default: 3 columns per card
+  - Narrow cards: 2 columns
+  - Wide cards: 4 columns
+  - Extra wide: 6 columns
+- **Tablet (640-1024px)**: 6-column responsive grid
+  - All cards sized appropriately for tablet
+  - Card content adapts to available space
+- **Mobile (<640px)**: Single column, full-width cards
+  - All cards stack vertically
+  - Optimized touch targets
+  - Reduced padding for space efficiency
+- Material Design Icons throughout
+- Compact header (32px) for maximum content space
+
+#### Settings Panel Features
+- **Connection Settings**: Host, port, username, password with persistence
+- **Auto-Refresh**: Toggle and configure interval (1-60 seconds)
+- **System Info**: Live display of ESPHome version, WiFi SSID, IP, signal strength
+- **Reset Button**: One-click reset with confirmation dialog
+  - Clears localStorage completely
+  - Removes all card customizations
+  - Resets theme to default
+  - Reloads page after reset
+
+#### Drag & Drop
+- Drag cards by the handle icon (⋮) to reorder
+- Works with card stacks
+- Layout automatically saved
+- Works across all responsive breakpoints
+
+### Customization & Persistence
+
+#### localStorage Data
+The dashboard automatically saves the following to browser localStorage:
+- **poolSettings**: Connection host, port, credentials, auto-refresh settings
+- **cardOrder**: Current card arrangement
+- **cardWidths**: Individual card width preferences
+- **darkMode**: Dark/light mode preference
+
+#### Customizing Card Layout
+1. **Reorder Cards**: Drag any card by its handle to move it
+2. **Resize Cards**: Click the expand button (↔️) on any card header to cycle through sizes
+3. **Stack Cards**: Cards can be grouped vertically (Mode + Light are pre-grouped)
+4. **Reset Everything**: Click "Reset All Settings" in the Settings panel to restore defaults
+
+#### Adding Card Stacks
+To create a new card stack, wrap cards in a `.card-stack` div:
+```html
+<div class="card-stack" data-stack-id="my-stack">
+    <section class="card narrow" draggable="true" data-card-id="card1">...</section>
+    <section class="card narrow" draggable="true" data-card-id="card2">...</section>
+</div>
+```
 
 ## API Client Usage
 
@@ -198,6 +306,35 @@ await client.setScheduleWaterfall(1, true);
 const state = await client.getCompleteState();
 console.log(state);
 ```
+
+## Advanced Features
+
+### Vertical Card Stacking
+
+The dashboard uses CSS Grid with intelligent vertical stacking to maximize screen real estate:
+
+- **Row Spanning**: Cards specify how many rows they occupy (1-6 rows)
+  - Compact cards (Mode, Light): 1 row each
+  - Medium cards (Pump, Switches): 2 rows each  
+  - Tall cards (Chlorinator, Alarms, Speeds): 3 rows each
+  - Extra tall cards (Schedule): 4 rows
+
+- **Auto-Packing**: CSS Grid's `dense` auto-flow automatically fills gaps
+  - Shorter cards stack vertically next to taller cards
+  - No wasted vertical space
+  - Responsive to window resizing
+
+- **Example Layout**:
+  ```
+  Row 1: [Pump Status (span 2)] [Mode (span 1)]  [Light (span 1)]
+  Row 2: [Pump Status cont.  ] [Switches (span 2)]
+  Row 3: [Chlorinator (span 3)] [Switches cont.]
+  Row 4: [Chlorinator cont.   ]
+  Row 5: [Chlorinator cont.   ]
+  ```
+
+- **Customization**: Add `row-span-{1-6}` class to any card to control height
+- **Drag-and-Drop**: Reorder cards while preserving row spans
 
 ## Entity Types
 

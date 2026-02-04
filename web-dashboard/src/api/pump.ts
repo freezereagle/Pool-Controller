@@ -43,46 +43,53 @@ export class PumpAPI extends BaseESPHomeClient {
    * Check if pump is running
    */
   async getPumpRunning(): Promise<boolean> {
-    const state = await this.request<BinarySensorState>('/binary_sensor/pump_running');
-    return state.state;
+    const response = await this.request<BinarySensorState>('/binary_sensor/pump_running');
+    return response.value;
   }
 
   /**
    * Get pump status
    */
   async getPumpStatus(): Promise<boolean> {
-    const state = await this.request<BinarySensorState>('/binary_sensor/pump_status');
-    return state.state;
+    const response = await this.request<BinarySensorState>('/binary_sensor/pump_status');
+    return response.value;
   }
 
   /**
    * Get pump program/mode
    */
   async getPumpProgram(): Promise<string> {
-    const state = await this.request<TextSensorState>('/text_sensor/pump_program');
-    return state.state;
+    const response = await this.request<TextSensorState>('/text_sensor/pump_program');
+    return response.value;
   }
 
   /**
    * Get all pump metrics (RPM, power, flow, pressure, time, clock)
    */
   async getPumpMetrics(): Promise<PumpMetrics> {
-    const [rpm, power, flow, pressure, timeRemaining, clock] = await Promise.all([
+    const [rpm, power, pressure, timeRemaining, clock] = await Promise.all([
       this.request<SensorState>('/sensor/pump_rpm'),
       this.request<SensorState>('/sensor/power'),
-      this.request<SensorState>('/sensor/flow_m__h'),
       this.request<SensorState>('/sensor/pressure'),
       this.request<SensorState>('/sensor/time_remaining'),
       this.request<SensorState>('/sensor/pump_clock'),
     ]);
 
+    // Try to get flow but don't fail if it's not available
+    let flow: SensorState | null = null;
+    try {
+      flow = await this.request<SensorState>('/sensor/flow_m__h');
+    } catch (e) {
+      // Flow sensor not available
+    }
+
     return {
-      pumpRpm: rpm.state,
-      power: power.state,
-      flowM3H: flow.state,
-      pressure: pressure.state,
-      timeRemaining: timeRemaining.state,
-      pumpClock: clock.state,
+      pumpRpm: rpm.value,
+      power: power.value,
+      flowM3H: flow?.value ?? 0,
+      pressure: pressure.value,
+      timeRemaining: timeRemaining.value,
+      pumpClock: clock.value,
     };
   }
 
@@ -99,8 +106,8 @@ export class PumpAPI extends BaseESPHomeClient {
    * Get current pump mode
    */
   async getMode(): Promise<string> {
-    const state = await this.request<SelectState>('/select/mode');
-    return state.state;
+    const response = await this.request<SelectState>('/select/mode');
+    return response.value;
   }
 
   /**
@@ -127,8 +134,8 @@ export class PumpAPI extends BaseESPHomeClient {
    * Get a pump speed value
    */
   async getPumpSpeed(speedNum: 1 | 2 | 3 | 4 | 5): Promise<number> {
-    const state = await this.request<NumberState>(`/number/pump_speed_${speedNum}`);
-    return state.state;
+    const response = await this.request<NumberState>(`/number/pump_speed_${speedNum}`);
+    return response.value;
   }
 
   /**
@@ -166,8 +173,8 @@ export class PumpAPI extends BaseESPHomeClient {
    * Get schedule start time
    */
   async getScheduleStartTime(scheduleNum: 1 | 2 | 3 | 4 | 5): Promise<string> {
-    const state = await this.request<TimeState>(`/time/schedule_${scheduleNum}_start`);
-    return state.state;
+    const response = await this.request<TimeState>(`/time/schedule_${scheduleNum}_start`);
+    return response.value;
   }
 
   /**
@@ -181,8 +188,8 @@ export class PumpAPI extends BaseESPHomeClient {
    * Get schedule speed
    */
   async getScheduleSpeed(scheduleNum: 1 | 2 | 3 | 4 | 5): Promise<string> {
-    const state = await this.request<SelectState>(`/select/schedule_${scheduleNum}_speed`);
-    return state.state;
+    const response = await this.request<SelectState>(`/select/schedule_${scheduleNum}_speed`);
+    return response.value;
   }
 
   /**
@@ -197,8 +204,8 @@ export class PumpAPI extends BaseESPHomeClient {
    * Get schedule waterfall state
    */
   async getScheduleWaterfall(scheduleNum: 1 | 2 | 3 | 4 | 5): Promise<boolean> {
-    const state = await this.request<SwitchState>(`/switch/schedule_${scheduleNum}_waterfall`);
-    return (state.state as any) === 'ON' || state.state === true;
+    const response = await this.request<SwitchState>(`/switch/schedule_${scheduleNum}_waterfall`);
+    return response.value;
   }
 
   /**
@@ -212,8 +219,8 @@ export class PumpAPI extends BaseESPHomeClient {
    * Get pump end time
    */
   async getPumpEndTime(): Promise<string> {
-    const state = await this.request<TimeState>('/time/pump_end_time');
-    return state.state;
+    const response = await this.request<TimeState>('/time/pump_end_time');
+    return response.value;
   }
 
   /**
@@ -230,12 +237,12 @@ export class PumpAPI extends BaseESPHomeClient {
     ]);
 
     return {
-      schedule1Rpm: rpm1.state,
-      schedule2Rpm: rpm2.state,
-      schedule2R: rpm2r.state,
-      schedule3Rpm: rpm3.state,
-      schedule4Rpm: rpm4.state,
-      schedule5Rpm: rpm5.state,
+      schedule1Rpm: rpm1.value,
+      schedule2Rpm: rpm2.value,
+      schedule2R: rpm2r.value,
+      schedule3Rpm: rpm3.value,
+      schedule4Rpm: rpm4.value,
+      schedule5Rpm: rpm5.value,
     };
   }
 
@@ -255,14 +262,14 @@ export class PumpAPI extends BaseESPHomeClient {
     ]);
 
     return {
-      scheduleOffStatus: off.state,
-      schedule1Status: s1.state,
-      schedule2Status: s2.state,
-      schedule3Status: s3.state,
-      schedule4Status: s4.state,
-      schedule5Status: s5.state,
-      currentSchedule: current.state,
-      scheduleValidation: validation.state,
+      scheduleOffStatus: off.value,
+      schedule1Status: s1.value,
+      schedule2Status: s2.value,
+      schedule3Status: s3.value,
+      schedule4Status: s4.value,
+      schedule5Status: s5.value,
+      currentSchedule: current.value,
+      scheduleValidation: validation.value,
     };
   }
 
@@ -288,16 +295,16 @@ export class PumpAPI extends BaseESPHomeClient {
    * Get waterfall state
    */
   async getWaterfall(): Promise<boolean> {
-    const state = await this.request<SwitchState>('/switch/waterfall');
-    return (state.state as any) === 'ON' || state.state === true;
+    const response = await this.request<SwitchState>('/switch/waterfall');
+    return response.value;
   }
 
   /**
    * Get waterfall auto mode state
    */
   async getWaterfallAuto(): Promise<boolean> {
-    const state = await this.request<SwitchState>('/switch/waterfall__auto_');
-    return (state.state as any) === 'ON' || state.state === true;
+    const response = await this.request<SwitchState>('/switch/waterfall__auto_');
+    return response.value;
   }
 
   /**
@@ -311,48 +318,48 @@ export class PumpAPI extends BaseESPHomeClient {
    * Get auto schedule state
    */
   async getAutoSchedule(): Promise<boolean> {
-    const state = await this.request<SwitchState>('/switch/auto_schedule');
-    return (state.state as any) === 'ON' || state.state === true;
+    const response = await this.request<SwitchState>('/switch/auto_schedule');
+    return response.value;
   }
 
   /**
    * Get takeover mode state
    */
   async getTakeoverMode(): Promise<boolean> {
-    const state = await this.request<SwitchState>('/switch/takeover_mode');
-    return (state.state as any) === 'ON' || state.state === true;
+    const response = await this.request<SwitchState>('/switch/takeover_mode');
+    return response.value;
   }
 
   /**
    * Get off switch state
    */
   async getOff(): Promise<boolean> {
-    const state = await this.request<SwitchState>('/switch/off');
-    return (state.state as any) === 'ON' || state.state === true;
+    const response = await this.request<SwitchState>('/switch/off');
+    return response.value;
   }
 
   /**
    * Get pump clock formatted
    */
   async getPumpClockFormatted(): Promise<string> {
-    const state = await this.request<TextSensorState>('/text_sensor/pump_clock_formatted');
-    return state.state;
+    const response = await this.request<TextSensorState>('/text_sensor/pump_clock_formatted');
+    return response.value;
   }
 
   /**
    * Get current schedule
    */
   async getCurrentSchedule(): Promise<string> {
-    const state = await this.request<TextSensorState>('/text_sensor/current_schedule');
-    return state.state;
+    const response = await this.request<TextSensorState>('/text_sensor/current_schedule');
+    return response.value;
   }
 
   /**
    * Get schedule off status
    */
   async getScheduleOffStatus(): Promise<string> {
-    const state = await this.request<TextSensorState>('/text_sensor/schedule_off_status');
-    return state.state;
+    const response = await this.request<TextSensorState>('/text_sensor/schedule_off_status');
+    return response.value;
   }
 
   // ==================== Maintenance ====================
