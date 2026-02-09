@@ -33,7 +33,7 @@ pip install aioesphomeapi aiohttp
 ### Basic Usage
 
 ```bash
-python get_ids.py <host> [encryption_key] [password] [port] [--test]
+python get_ids.py <host> [encryption_key] [password] [port] [--test] [--time]
 ```
 
 ### Examples
@@ -58,6 +58,16 @@ python get_ids.py 192.168.1.100 "<your-encryption-key>" "" 6053 --test
 python get_ids.py pool-controller.local "<your-encryption-key>"
 ```
 
+**Time the execution with summary output:**
+```bash
+python get_ids.py 192.168.1.100 "<your-encryption-key>" "" 6053 --time
+```
+
+**Time the execution with full test results:**
+```bash
+python get_ids.py 192.168.1.100 "<your-encryption-key>" "" 6053 --time --test
+```
+
 ## Parameters
 
 - `host` - IP address or hostname of the ESPHome device (required)
@@ -65,6 +75,7 @@ python get_ids.py pool-controller.local "<your-encryption-key>"
 - `password` - API password if configured (optional)
 - `port` - API port (optional, default: 6053)
 - `--test` - Flag to test all GET endpoints after listing (optional)
+- `--time` - Flag to time the entire execution and display only summary output (optional)
 
 ## Output
 
@@ -215,6 +226,39 @@ api:
 - Verify the IP address/hostname is correct
 - Ensure the device is on the same network
 - Check that port 6053 is not blocked by firewall
+
+## Performance Timing
+
+Use the `--time` flag to measure execution time and reduce output verbosity:
+
+```bash
+python get_ids.py 192.168.1.100 "<your-encryption-key>" "" 6053 --time
+```
+
+This mode displays only summary statistics:
+```
+Total Entities: 101
+Total REST Endpoints: 101
+  GET-capable:  101
+  POST-only:    0
+
+Execution Time: 1.669s
+```
+
+Combine with `--test` to include test results without per-endpoint details:
+```bash
+python get_ids.py 192.168.1.100 "<your-encryption-key>" "" 6053 --time --test
+```
+
+## Implementations
+
+This tool is available in multiple languages:
+
+- **Python** - [get_ids.py](../get_ids.py) - Original aioesphomeapi implementation
+- **Rust** - [Rust/](./Rust/) - Native tokio implementation with improved performance
+- **Zig** - [Zig/](./Zig/) - Bare-metal Zig implementation with minimal binary size
+
+See individual implementation folders for language-specific documentation.
 
 ## License
 

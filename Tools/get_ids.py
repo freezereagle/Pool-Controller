@@ -5,11 +5,12 @@ This script connects to an ESPHome device and displays device info and entity li
 """
 import asyncio
 import sys
+import time
 import aiohttp
 from aioesphomeapi import APIClient, APIConnectionError
 
 
-async def get_device_info(host: str, password: str = "", port: int = 6053, encryption_key: str = "", test_endpoints: bool = False):
+async def get_device_info(host: str, password: str = "", port: int = 6053, encryption_key: str = "", test_endpoints: bool = False, timed: bool = False):
     """
     Connect to an ESPHome device and retrieve device info and entities.
     
@@ -24,39 +25,43 @@ async def get_device_info(host: str, password: str = "", port: int = 6053, encry
     
     try:
         # Connect to the device
-        print(f"Connecting to {host}:{port}...")
+        if not timed:
+            print(f"Connecting to {host}:{port}...")
         await client.connect(login=True)
-        print("Connected successfully!\n")
+        if not timed:
+            print("Connected successfully!\n")
         
         # Get device info
         device_info = await client.device_info()
-        print("=" * 60)
-        print("DEVICE INFORMATION")
-        print("=" * 60)
-        print(f"Name:                {device_info.name}")
-        if hasattr(device_info, 'friendly_name') and device_info.friendly_name:
-            print(f"Friendly Name:       {device_info.friendly_name}")
-        print(f"MAC Address:         {device_info.mac_address}")
-        print(f"ESPHome Version:     {device_info.esphome_version}")
-        if hasattr(device_info, 'compilation_time') and device_info.compilation_time:
-            print(f"Compilation Time:    {device_info.compilation_time}")
-        if hasattr(device_info, 'model') and device_info.model:
-            print(f"Model:               {device_info.model}")
-        if hasattr(device_info, 'manufacturer') and device_info.manufacturer:
-            print(f"Manufacturer:        {device_info.manufacturer}")
-        if hasattr(device_info, 'platform') and device_info.platform:
-            print(f"Platform:            {device_info.platform}")
-        if hasattr(device_info, 'board') and device_info.board:
-            print(f"Board:               {device_info.board}")
-        print("=" * 60)
-        print()
+        if not timed:
+            print("=" * 60)
+            print("DEVICE INFORMATION")
+            print("=" * 60)
+            print(f"Name:                {device_info.name}")
+            if hasattr(device_info, 'friendly_name') and device_info.friendly_name:
+                print(f"Friendly Name:       {device_info.friendly_name}")
+            print(f"MAC Address:         {device_info.mac_address}")
+            print(f"ESPHome Version:     {device_info.esphome_version}")
+            if hasattr(device_info, 'compilation_time') and device_info.compilation_time:
+                print(f"Compilation Time:    {device_info.compilation_time}")
+            if hasattr(device_info, 'model') and device_info.model:
+                print(f"Model:               {device_info.model}")
+            if hasattr(device_info, 'manufacturer') and device_info.manufacturer:
+                print(f"Manufacturer:        {device_info.manufacturer}")
+            if hasattr(device_info, 'platform') and device_info.platform:
+                print(f"Platform:            {device_info.platform}")
+            if hasattr(device_info, 'board') and device_info.board:
+                print(f"Board:               {device_info.board}")
+            print("=" * 60)
+            print()
         
         # List all entities
         entities, services = await client.list_entities_services()
         
-        print("=" * 60)
-        print("ENTITIES")
-        print("=" * 60)
+        if not timed:
+            print("=" * 60)
+            print("ENTITIES")
+            print("=" * 60)
 
         # Group entities by type
         entity_groups = {
@@ -116,18 +121,21 @@ async def get_device_info(host: str, password: str = "", port: int = 6053, encry
         total_entities = 0
         for group_name, group_entities in entity_groups.items():
             if group_entities:
-                print(f"\n{group_name} ({len(group_entities)}):")
-                for entity in sorted(group_entities):
-                    print(entity)
+                if not timed:
+                    print(f"\n{group_name} ({len(group_entities)}):")
+                    for entity in sorted(group_entities):
+                        print(entity)
                 total_entities += len(group_entities)
         
-        print()
-        print("=" * 60)
+        if not timed:
+            print()
+            print("=" * 60)
         print(f"Total Entities: {total_entities}")
-        print("=" * 60)
+        if not timed:
+            print("=" * 60)
         
         # List services
-        if services:
+        if services and not timed:
             print()
             print("=" * 60)
             print("SERVICES")
@@ -139,13 +147,14 @@ async def get_device_info(host: str, password: str = "", port: int = 6053, encry
                         print(f"  - {arg.name}: {arg}")
         
         # Generate REST endpoints
-        print()
-        print()
-        print("=" * 60)
-        print("REST API ENDPOINTS")
-        print("=" * 60)
-        print(f"\nBase URL: http://{host}")
-        print()
+        if not timed:
+            print()
+            print()
+            print("=" * 60)
+            print("REST API ENDPOINTS")
+            print("=" * 60)
+            print(f"\nBase URL: http://{host}")
+            print()
         
         rest_endpoints = []
         skipped_entities = []
@@ -303,7 +312,7 @@ async def get_device_info(host: str, password: str = "", port: int = 6053, encry
                 })
         
         # Print skipped entities info
-        if skipped_entities:
+        if skipped_entities and not timed:
             print()
             print("=" * 60)
             print(f"ENTITIES WITHOUT REST ENDPOINTS ({len(skipped_entities)})")
@@ -320,19 +329,21 @@ async def get_device_info(host: str, password: str = "", port: int = 6053, encry
                 endpoint_groups[ep_type] = []
             endpoint_groups[ep_type].append(ep)
         
-        for ep_type, endpoints in sorted(endpoint_groups.items()):
-            print(f"\n{ep_type} ({len(endpoints)}):")
-            for ep in sorted(endpoints, key=lambda x: x['object_id']):
-                methods = ', '.join(ep['methods'])
-                print(f"\n  {ep['entity']}")
-                print(f"    Endpoint: {ep['endpoint']}")
-                print(f"    Methods:  {methods}")
-                if 'actions' in ep:
-                    actions = ', '.join(ep['actions'])
-                    print(f"    Actions:  {actions}")
+        if not timed:
+            for ep_type, endpoints in sorted(endpoint_groups.items()):
+                print(f"\n{ep_type} ({len(endpoints)}):")
+                for ep in sorted(endpoints, key=lambda x: x['object_id']):
+                    methods = ', '.join(ep['methods'])
+                    print(f"\n  {ep['entity']}")
+                    print(f"    Endpoint: {ep['endpoint']}")
+                    print(f"    Methods:  {methods}")
+                    if 'actions' in ep:
+                        actions = ', '.join(ep['actions'])
+                        print(f"    Actions:  {actions}")
         
-        print()
-        print("=" * 60)
+        if not timed:
+            print()
+            print("=" * 60)
         print(f"Total REST Endpoints: {len(rest_endpoints)}")
         
         # Count GET-capable endpoints
@@ -341,17 +352,19 @@ async def get_device_info(host: str, password: str = "", port: int = 6053, encry
         
         print(f"  GET-capable:  {get_count}")
         print(f"  POST-only:    {post_only_count}")
-        print("=" * 60)
-        print()
-        print("Example Usage:")
-        print("  GET  http://{host}/sensor/{sensor_id}")
-        print("  POST http://{host}/switch/{switch_id}/turn_on")
-        print("  POST http://{host}/light/{light_id}/toggle")
-        print()
+        if not timed:
+            print("=" * 60)
+            print()
+        if not timed:
+            print("Example Usage:")
+            print("  GET  http://{host}/sensor/{sensor_id}")
+            print("  POST http://{host}/switch/{switch_id}/turn_on")
+            print("  POST http://{host}/light/{light_id}/toggle")
+            print()
         
         # Test endpoints if requested
         if test_endpoints:
-            await test_rest_endpoints(host, rest_endpoints)
+            await test_rest_endpoints(host, rest_endpoints, timed)
         
         return rest_endpoints
         
@@ -367,28 +380,32 @@ async def get_device_info(host: str, password: str = "", port: int = 6053, encry
     return True
 
 
-async def test_rest_endpoints(host: str, rest_endpoints: list):
+async def test_rest_endpoints(host: str, rest_endpoints: list, timed: bool = False):
     """
     Test all GET endpoints and display responses.
     
     Args:
         host: IP address or hostname of the ESPHome device
         rest_endpoints: List of endpoint dictionaries
+        timed: If True, only print summary
     """
-    print()
-    print("=" * 60)
-    print("TESTING REST ENDPOINTS (GET)")
-    print("=" * 60)
-    print()
+    if not timed:
+        print()
+        print("=" * 60)
+        print("TESTING REST ENDPOINTS (GET)")
+        print("=" * 60)
+        print()
     
     # Filter endpoints that support GET
     get_endpoints = [ep for ep in rest_endpoints if 'GET' in ep['methods']]
     
     if not get_endpoints:
-        print("No GET endpoints found to test.")
+        if not timed:
+            print("No GET endpoints found to test.")
         return
     
-    print(f"Testing {len(get_endpoints)} GET endpoints...\n")
+    if not timed:
+        print(f"Testing {len(get_endpoints)} GET endpoints...\n")
     
     success_count = 0
     fail_count = 0
@@ -401,85 +418,98 @@ async def test_rest_endpoints(host: str, rest_endpoints: list):
                     if response.status == 200:
                         try:
                             data = await response.json()
-                            status_icon = "✓"
                             success_count += 1
-                            print(f"{status_icon} [{ep['type']}] {ep['entity']}")
-                            print(f"  URL: {url}")
-                            print(f"  Response: {data}")
+                            if not timed:
+                                print(f"✓ [{ep['type']}] {ep['entity']}")
+                                print(f"  URL: {url}")
+                                print(f"  Response: {data}")
                         except Exception:
                             # Try as text if JSON parsing fails
                             text = await response.text()
-                            status_icon = "✓"
                             success_count += 1
-                            print(f"{status_icon} [{ep['type']}] {ep['entity']}")
-                            print(f"  URL: {url}")
-                            print(f"  Response: {text}")
+                            if not timed:
+                                print(f"✓ [{ep['type']}] {ep['entity']}")
+                                print(f"  URL: {url}")
+                                print(f"  Response: {text}")
                     else:
-                        status_icon = "✗"
                         fail_count += 1
-                        text = await response.text()
-                        print(f"{status_icon} [{ep['type']}] {ep['entity']} - FAILED")
-                        print(f"  URL: {url}")
-                        print(f"  Status: {response.status}")
-                        print(f"  Response: {text}")
-                    print()
+                        if not timed:
+                            text = await response.text()
+                            print(f"✗ [{ep['type']}] {ep['entity']} - FAILED")
+                            print(f"  URL: {url}")
+                            print(f"  Status: {response.status}")
+                            print(f"  Response: {text}")
+                    if not timed:
+                        print()
             except asyncio.TimeoutError:
-                status_icon = "✗"
                 fail_count += 1
-                print(f"{status_icon} [{ep['type']}] {ep['entity']} - TIMEOUT")
-                print(f"  URL: {url}")
-                print(f"  Error: Request timed out after 5 seconds")
-                print()
+                if not timed:
+                    print(f"✗ [{ep['type']}] {ep['entity']} - TIMEOUT")
+                    print(f"  URL: {url}")
+                    print(f"  Error: Request timed out after 5 seconds")
+                    print()
             except aiohttp.ClientError as e:
-                status_icon = "✗"
                 fail_count += 1
-                print(f"{status_icon} [{ep['type']}] {ep['entity']} - CONNECTION ERROR")
-                print(f"  URL: {url}")
-                print(f"  Error: {e}")
-                print()
+                if not timed:
+                    print(f"✗ [{ep['type']}] {ep['entity']} - CONNECTION ERROR")
+                    print(f"  URL: {url}")
+                    print(f"  Error: {e}")
+                    print()
             except Exception as e:
-                status_icon = "✗"
                 fail_count += 1
-                print(f"{status_icon} [{ep['type']}] {ep['entity']} - ERROR")
-                print(f"  URL: {url}")
-                print(f"  Error: {e}")
-                print()
+                if not timed:
+                    print(f"✗ [{ep['type']}] {ep['entity']} - ERROR")
+                    print(f"  URL: {url}")
+                    print(f"  Error: {e}")
+                    print()
     
-    print("=" * 60)
+    if not timed:
+        print("=" * 60)
     print(f"TEST SUMMARY")
-    print("=" * 60)
+    if not timed:
+        print("=" * 60)
     print(f"Total Tested:  {len(get_endpoints)}")
-    print(f"Successful:    {success_count} ✓")
-    print(f"Failed:        {fail_count} ✗")
-    print("=" * 60)
-    print()
+    print(f"Successful:    {success_count} \u2713")
+    print(f"Failed:        {fail_count} \u2717")
+    if not timed:
+        print("=" * 60)
+        print()
 
 
 def main():
     """Main entry point."""
     if len(sys.argv) < 2:
-        print("Usage: python get_ids.py <host> [encryption_key] [password] [port] [--test]")
+        print("Usage: python get_ids.py <host> [encryption_key] [password] [port] [--test] [--time]")
         print("\nExamples:")
         print("  python get_ids.py 192.168.1.100")
         print("  python get_ids.py 192.168.1.100 'base64_encryption_key'")
         print("  python get_ids.py 192.168.1.100 'base64_encryption_key' mypassword")
         print("  python get_ids.py 192.168.1.100 'base64_encryption_key' mypassword 6053")
         print("  python get_ids.py 192.168.1.100 'base64_encryption_key' '' 6053 --test")
+        print("  python get_ids.py 192.168.1.100 'base64_encryption_key' '' 6053 --time")
         print("\nNote: Encryption key is the API encryption key from ESPHome (noise_psk)")
         print("      Add --test flag to test all GET endpoints")
+        print("      Add --time flag to time execution (summary output only)")
         sys.exit(1)
     
-    # Check for --test flag
+    # Check for flags
     test_endpoints = '--test' in sys.argv
-    args = [arg for arg in sys.argv[1:] if arg != '--test']
+    timed = '--time' in sys.argv
+    args = [arg for arg in sys.argv[1:] if arg not in ('--test', '--time')]
     
     host = args[0]
     encryption_key = args[1] if len(args) > 1 else ""
     password = args[2] if len(args) > 2 else ""
     port = int(args[3]) if len(args) > 3 else 6053
     
-    # Run the async function
-    success = asyncio.run(get_device_info(host, password, port, encryption_key, test_endpoints))
+    # Run the async function with timing
+    start_time = time.perf_counter()
+    success = asyncio.run(get_device_info(host, password, port, encryption_key, test_endpoints, timed))
+    elapsed = time.perf_counter() - start_time
+    
+    if timed:
+        print(f"\nExecution Time: {elapsed:.3f}s")
+    
     sys.exit(0 if success else 1)
 
 
