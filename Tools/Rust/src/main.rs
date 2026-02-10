@@ -9,6 +9,7 @@
 mod noise_connection;
 mod protobuf;
 mod entities;
+mod web_gen;
 
 use std::env;
 use std::process;
@@ -22,25 +23,46 @@ async fn main() {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
-        eprintln!("Usage: esphome-get-ids <host> [encryption_key] [password] [port] [--test] [--time]");
+        eprintln!("Usage: get_ids <host> [encryption_key] [password] [port] [--test] [--time] [--js <dir>] [--ts <dir>]");
         eprintln!();
         eprintln!("Examples:");
-        eprintln!("  esphome-get-ids 192.168.1.100");
-        eprintln!("  esphome-get-ids 192.168.1.100 'base64_encryption_key'");
-        eprintln!("  esphome-get-ids 192.168.1.100 'base64_encryption_key' mypassword");
-        eprintln!("  esphome-get-ids 192.168.1.100 'base64_encryption_key' mypassword 6053");
-        eprintln!("  esphome-get-ids 192.168.1.100 'base64_encryption_key' '' 6053 --test");
-        eprintln!("  esphome-get-ids 192.168.1.100 'base64_encryption_key' '' 6053 --time");
+        eprintln!("  get_ids 192.168.1.100");
+        eprintln!("  get_ids 192.168.1.100 'base64_encryption_key'");
+        eprintln!("  get_ids 192.168.1.100 'base64_encryption_key' mypassword");
+        eprintln!("  get_ids 192.168.1.100 'base64_encryption_key' mypassword 6053");
+        eprintln!("  get_ids 192.168.1.100 'base64_encryption_key' '' 6053 --test");
+        eprintln!("  get_ids 192.168.1.100 'base64_encryption_key' '' 6053 --time");
+        eprintln!("  get_ids 192.168.1.100 'base64_encryption_key' --js ./dashboard");
+        eprintln!("  get_ids 192.168.1.100 'base64_encryption_key' --ts ./dashboard");
         eprintln!();
         eprintln!("Note: Encryption key is the API encryption key from ESPHome (noise_psk)");
         eprintln!("      Add --test flag to test all GET endpoints");
         eprintln!("      Add --time flag to time execution (summary output only)");
+        eprintln!("      Add --js <dir> to generate a JavaScript web dashboard");
+        eprintln!("      Add --ts <dir> to generate a TypeScript web dashboard");
         process::exit(1);
     }
 
     let test_endpoints = args.iter().any(|a| a == "--test");
     let timed = args.iter().any(|a| a == "--time");
-    let filtered: Vec<&String> = args[1..].iter().filter(|a| *a != "--test" && *a != "--time").collect();
+
+    // Parse --js and --ts flags
+    let mut web_out = String::new();
+    let mut web_lang = String::new();
+    let mut filtered: Vec<&String> = Vec::new();
+    let mut i = 1;
+    while i < args.len() {
+        if (args[i] == "--js" || args[i] == "--ts") && i + 1 < args.len() {
+            web_lang = if args[i] == "--js" { "js".to_string() } else { "ts".to_string() };
+            web_out = args[i + 1].clone();
+            i += 2;
+        } else if args[i] == "--test" || args[i] == "--time" {
+            i += 1;
+        } else {
+            filtered.push(&args[i]);
+            i += 1;
+        }
+    }
 
     let host = filtered[0].as_str();
     let encryption_key = if filtered.len() > 1 { filtered[1].as_str() } else { "" };
@@ -52,7 +74,7 @@ async fn main() {
     };
 
     let start = Instant::now();
-    match run(host, port, encryption_key, test_endpoints, timed).await {
+    match run(host, port, encryption_key, test_endpoints, timed, &web_out, &web_lang).await {
         Ok(_) => {
             if timed {
                 let elapsed = start.elapsed();
@@ -77,6 +99,8 @@ async fn run(
     encryption_key: &str,
     test_endpoints: bool,
     timed: bool,
+    web_out: &str,
+    web_lang: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if !timed {
         println!("Connecting to {}:{}...", host, port);
@@ -299,6 +323,16 @@ async fn run(
 
     // Disconnect gracefully
     conn.send_message(5, &[]).await?; // DisconnectRequest
+
+    // Generate web interface if requested
+    if !web_out.is_empty() && !web_lang.is_empty() {
+        let dev_name = if !device_info.friendly_name.is_empty() {
+            &device_info.friendly_name
+        } else {
+            &device_info.name
+        };
+        web_gen::generate(host, dev_name, &rest_endpoints, web_out, web_lang)?;
+    }
 
     // Test endpoints if requested
     if test_endpoints {

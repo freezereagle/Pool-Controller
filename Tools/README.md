@@ -15,18 +15,19 @@ Connect to ESPHome devices to retrieve device information, list entities, genera
 - Live endpoint testing with response inspection
 - Support for encrypted connections (Noise protocol)
 - Performance timing with `--time` flag
+- Interactive web dashboard generation (`--js` or `--ts`)
 - Available in three implementations: Python, Rust, and Zig
 
 **Quick Start:**
 ```bash
 # Python (original implementation)
-python get_ids.py <host> [encryption_key] [--test] [--time]
+python get_ids.py <host> [encryption_key] [--test] [--time] [--js <dir>] [--ts <dir>]
 
 # Rust (high-performance native implementation)
-./Rust/target/release/get_ids <host> [encryption_key] [--test] [--time]
+./Rust/target/release/get_ids <host> [encryption_key] [--test] [--time] [--js <dir>] [--ts <dir>]
 
 # Zig (ultra-fast, minimal binary)
-./Zig/zig-out/bin/get_ids <host> [encryption_key] [--test] [--time]
+./Zig/zig-out/bin/get_ids <host> [encryption_key] [--test] [--time] [--js <dir>] [--ts <dir>]
 ```
 
 #### Implementation Comparison
@@ -112,6 +113,25 @@ python get_ids.py 192.168.68.79 "xcT/ahb5GdXPpbOb0irwnhUXPFD5H5JQPf6D+rmaUUI=" -
 
 # Zig with timing
 ./Zig/zig-out/bin/get_ids 192.168.68.79 "xcT/ahb5GdXPpbOb0irwnhUXPFD5H5JQPf6D+rmaUUI=" --time
+```
+
+### Web Dashboard Generation (all implementations)
+```bash
+# Generate JavaScript dashboard
+python get_ids.py 192.168.68.79 "xcT/ahb5GdXPpbOb0irwnhUXPFD5H5JQPf6D+rmaUUI=" --js ./dashboard
+./Rust/target/release/get_ids 192.168.68.79 "xcT/ahb5GdXPpbOb0irwnhUXPFD5H5JQPf6D+rmaUUI=" --js ./dashboard
+./Zig/zig-out/bin/get_ids 192.168.68.79 "xcT/ahb5GdXPpbOb0irwnhUXPFD5H5JQPf6D+rmaUUI=" --js ./dashboard
+
+# Generate TypeScript dashboard
+python get_ids.py 192.168.68.79 "xcT/ahb5GdXPpbOb0irwnhUXPFD5H5JQPf6D+rmaUUI=" --ts ./dashboard
+./Rust/target/release/get_ids 192.168.68.79 "xcT/ahb5GdXPpbOb0irwnhUXPFD5H5JQPf6D+rmaUUI=" --ts ./dashboard
+./Zig/zig-out/bin/get_ids 192.168.68.79 "xcT/ahb5GdXPpbOb0irwnhUXPFD5H5JQPf6D+rmaUUI=" --ts ./dashboard
+
+# Build and serve TypeScript dashboard
+cd ./dashboard
+npm install -g typescript
+npm run build
+npm run serve
 ```
 
 ---

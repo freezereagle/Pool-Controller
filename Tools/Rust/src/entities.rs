@@ -12,6 +12,7 @@ pub struct EntityInfo {
     pub object_id: String,
     pub key: u32,
     pub name: String,
+    pub options: Vec<String>,   // Select options (field 6), empty for non-Select entities
 }
 
 impl EntityInfo {
@@ -29,6 +30,7 @@ pub struct RestEndpoint {
     pub methods: Vec<String>,
     pub endpoint: String,
     pub actions: Vec<String>,
+    pub options: Vec<String>,   // Select options, empty for non-Select
 }
 
 /// Represents a skipped entity (no REST endpoint mapping).
@@ -82,11 +84,19 @@ pub fn parse_entity(msg_type: u16, data: &[u8]) -> Option<EntityInfo> {
     let entity_type = msg_type_to_entity_type(msg_type)?;
     let fields = ProtoFields::decode(data);
 
+    // For Select entities (msg_type 52), extract options from field 6
+    let options = if msg_type == 52 {
+        fields.strings.get(&6).cloned().unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+
     Some(EntityInfo {
         entity_type: entity_type.to_string(),
         object_id: fields.get_string(1),
         key: fields.get_fixed32(2),
         name: fields.get_string(3),
+        options,
     })
 }
 
@@ -154,6 +164,7 @@ pub fn generate_rest_endpoints(entities: &[EntityInfo]) -> Vec<RestEndpoint> {
                 methods: vec!["GET".to_string()],
                 endpoint: format!("/binary_sensor/{}", entity.object_id),
                 actions: vec![],
+                options: vec![],
             }),
             "TextSensor" => Some(RestEndpoint {
                 ep_type: "Text Sensor".to_string(),
@@ -162,6 +173,7 @@ pub fn generate_rest_endpoints(entities: &[EntityInfo]) -> Vec<RestEndpoint> {
                 methods: vec!["GET".to_string()],
                 endpoint: format!("/text_sensor/{}", entity.object_id),
                 actions: vec![],
+                options: vec![],
             }),
             "Sensor" => Some(RestEndpoint {
                 ep_type: "Sensor".to_string(),
@@ -170,6 +182,7 @@ pub fn generate_rest_endpoints(entities: &[EntityInfo]) -> Vec<RestEndpoint> {
                 methods: vec!["GET".to_string()],
                 endpoint: format!("/sensor/{}", entity.object_id),
                 actions: vec![],
+                options: vec![],
             }),
             "Switch" => Some(RestEndpoint {
                 ep_type: "Switch".to_string(),
@@ -182,6 +195,7 @@ pub fn generate_rest_endpoints(entities: &[EntityInfo]) -> Vec<RestEndpoint> {
                     "turn_off".to_string(),
                     "toggle".to_string(),
                 ],
+                options: vec![],
             }),
             "Light" => Some(RestEndpoint {
                 ep_type: "Light".to_string(),
@@ -194,6 +208,7 @@ pub fn generate_rest_endpoints(entities: &[EntityInfo]) -> Vec<RestEndpoint> {
                     "turn_off".to_string(),
                     "toggle".to_string(),
                 ],
+                options: vec![],
             }),
             "Button" => Some(RestEndpoint {
                 ep_type: "Button".to_string(),
@@ -202,6 +217,7 @@ pub fn generate_rest_endpoints(entities: &[EntityInfo]) -> Vec<RestEndpoint> {
                 methods: vec!["GET".to_string(), "POST".to_string()],
                 endpoint: format!("/button/{}", entity.object_id),
                 actions: vec!["press".to_string()],
+                options: vec![],
             }),
             "Fan" => Some(RestEndpoint {
                 ep_type: "Fan".to_string(),
@@ -214,6 +230,7 @@ pub fn generate_rest_endpoints(entities: &[EntityInfo]) -> Vec<RestEndpoint> {
                     "turn_off".to_string(),
                     "toggle".to_string(),
                 ],
+                options: vec![],
             }),
             "Cover" => Some(RestEndpoint {
                 ep_type: "Cover".to_string(),
@@ -226,6 +243,7 @@ pub fn generate_rest_endpoints(entities: &[EntityInfo]) -> Vec<RestEndpoint> {
                     "close".to_string(),
                     "stop".to_string(),
                 ],
+                options: vec![],
             }),
             "Climate" => Some(RestEndpoint {
                 ep_type: "Climate".to_string(),
@@ -234,6 +252,7 @@ pub fn generate_rest_endpoints(entities: &[EntityInfo]) -> Vec<RestEndpoint> {
                 methods: vec!["GET".to_string(), "POST".to_string()],
                 endpoint: format!("/climate/{}", entity.object_id),
                 actions: vec!["set mode, temperature".to_string()],
+                options: vec![],
             }),
             "Number" => Some(RestEndpoint {
                 ep_type: "Number".to_string(),
@@ -242,6 +261,7 @@ pub fn generate_rest_endpoints(entities: &[EntityInfo]) -> Vec<RestEndpoint> {
                 methods: vec!["GET".to_string(), "POST".to_string()],
                 endpoint: format!("/number/{}", entity.object_id),
                 actions: vec!["set value".to_string()],
+                options: vec![],
             }),
             "Select" => Some(RestEndpoint {
                 ep_type: "Select".to_string(),
@@ -250,6 +270,7 @@ pub fn generate_rest_endpoints(entities: &[EntityInfo]) -> Vec<RestEndpoint> {
                 methods: vec!["GET".to_string(), "POST".to_string()],
                 endpoint: format!("/select/{}", entity.object_id),
                 actions: vec!["set option".to_string()],
+                options: entity.options.clone(),
             }),
             "Lock" => Some(RestEndpoint {
                 ep_type: "Lock".to_string(),
@@ -258,6 +279,7 @@ pub fn generate_rest_endpoints(entities: &[EntityInfo]) -> Vec<RestEndpoint> {
                 methods: vec!["GET".to_string(), "POST".to_string()],
                 endpoint: format!("/lock/{}", entity.object_id),
                 actions: vec!["lock".to_string(), "unlock".to_string()],
+                options: vec![],
             }),
             "Time" => Some(RestEndpoint {
                 ep_type: "Time".to_string(),
@@ -266,6 +288,7 @@ pub fn generate_rest_endpoints(entities: &[EntityInfo]) -> Vec<RestEndpoint> {
                 methods: vec!["GET".to_string(), "POST".to_string()],
                 endpoint: format!("/time/{}", entity.object_id),
                 actions: vec!["set time".to_string()],
+                options: vec![],
             }),
             "Text" => Some(RestEndpoint {
                 ep_type: "Text".to_string(),
@@ -274,6 +297,7 @@ pub fn generate_rest_endpoints(entities: &[EntityInfo]) -> Vec<RestEndpoint> {
                 methods: vec!["GET".to_string(), "POST".to_string()],
                 endpoint: format!("/text/{}", entity.object_id),
                 actions: vec!["set text".to_string()],
+                options: vec![],
             }),
             _ => None,
         };

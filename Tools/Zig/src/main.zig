@@ -506,6 +506,18 @@ const ProtoFields = struct {
         }
         return 0;
     }
+
+    /// Get all string values for a repeated field (e.g. Select options in field 6).
+    fn getAllStrings(self: *const ProtoFields, field_num: u32, allocator: mem.Allocator) ![]const []const u8 {
+        var list = std.ArrayList([]const u8){};
+        defer list.deinit(allocator);
+        for (self.fields[0..self.count]) |f| {
+            if (f.field_num == field_num and f.wire_type == 2) {
+                try list.append(allocator, f.string_val);
+            }
+        }
+        return try list.toOwnedSlice(allocator);
+    }
 };
 
 // ========== ESPHome Message Encoding ==========
@@ -531,6 +543,7 @@ const EntityInfo = struct {
     name: []const u8,
     entity_type: []const u8,
     msg_type: u16,
+    options: []const []const u8, // Select options from protobuf field 6
 };
 
 fn msgTypeToEntityType(msg_type: u16) ?[]const u8 {
@@ -692,30 +705,41 @@ pub fn main() !void {
     const stdout_file = std.fs.File.stdout();
 
     if (args.len < 2) {
-        writeOut(stdout_file, "Usage: esphome-get-ids <host> [encryption_key] [password] [port] [--test] [--time]\n\n", .{});
+        writeOut(stdout_file, "Usage: get_ids <host> [encryption_key] [password] [port] [--test] [--time] [--js <dir>] [--ts <dir>]\n\n", .{});
         writeOut(stdout_file, "Examples:\n", .{});
-        writeOut(stdout_file, "  esphome-get-ids 192.168.1.100\n", .{});
-        writeOut(stdout_file, "  esphome-get-ids 192.168.1.100 'base64_encryption_key'\n", .{});
-        writeOut(stdout_file, "  esphome-get-ids 192.168.1.100 'base64_encryption_key' '' 6053 --test\n\n", .{});
-        writeOut(stdout_file, "  esphome-get-ids 192.168.1.100 'base64_encryption_key' '' 6053 --time\n\n", .{});
+        writeOut(stdout_file, "  get_ids 192.168.1.100\n", .{});
+        writeOut(stdout_file, "  get_ids 192.168.1.100 'base64_encryption_key'\n", .{});
+        writeOut(stdout_file, "  get_ids 192.168.1.100 'base64_encryption_key' '' 6053 --test\n", .{});
+        writeOut(stdout_file, "  get_ids 192.168.1.100 'base64_encryption_key' '' 6053 --time\n", .{});
+        writeOut(stdout_file, "  get_ids 192.168.1.100 'base64_encryption_key' --js ./dashboard\n", .{});
+        writeOut(stdout_file, "  get_ids 192.168.1.100 'base64_encryption_key' --ts ./dashboard\n\n", .{});
         writeOut(stdout_file, "Note: Encryption key is the API encryption key from ESPHome (noise_psk)\n", .{});
         writeOut(stdout_file, "      Add --test flag to test all GET endpoints\n", .{});
         writeOut(stdout_file, "      Add --time flag to time execution (summary output only)\n", .{});
+        writeOut(stdout_file, "      Add --js <dir> to generate a JavaScript web dashboard\n", .{});
+        writeOut(stdout_file, "      Add --ts <dir> to generate a TypeScript web dashboard\n", .{});
         std.process.exit(1);
     }
 
     var test_endpoints = false;
     var timed = false;
+    var web_out: []const u8 = "";
+    var web_lang: []const u8 = "";
     var filtered: std.ArrayList([]const u8) = .{};
     defer filtered.deinit(allocator);
 
-    for (args[1..]) |arg| {
-        if (mem.eql(u8, arg, "--test")) {
+    var i: usize = 1;
+    while (i < args.len) : (i += 1) {
+        if ((mem.eql(u8, args[i], "--js") or mem.eql(u8, args[i], "--ts")) and i + 1 < args.len) {
+            web_lang = if (mem.eql(u8, args[i], "--js")) "js" else "ts";
+            web_out = args[i + 1];
+            i += 1; // skip next arg (dir)
+        } else if (mem.eql(u8, args[i], "--test")) {
             test_endpoints = true;
-        } else if (mem.eql(u8, arg, "--time")) {
+        } else if (mem.eql(u8, args[i], "--time")) {
             timed = true;
         } else {
-            try filtered.append(allocator, arg);
+            try filtered.append(allocator, args[i]);
         }
     }
 
@@ -724,7 +748,7 @@ pub fn main() !void {
     const port: u16 = if (filtered.items.len > 3) std.fmt.parseInt(u16, filtered.items[3], 10) catch 6053 else 6053;
 
     var timer = std.time.Timer.start() catch null;
-    try run(allocator, host, port, encryption_key, test_endpoints, timed, stdout_file);
+    try run(allocator, host, port, encryption_key, test_endpoints, timed, web_out, web_lang, stdout_file);
     if (timed) {
         if (timer) |*t| {
             const elapsed_ns = t.read();
@@ -735,7 +759,7 @@ pub fn main() !void {
     }
 }
 
-fn run(allocator: mem.Allocator, host: []const u8, port: u16, encryption_key: []const u8, test_endpoints: bool, timed: bool, out: std.fs.File) !void {
+fn run(allocator: mem.Allocator, host: []const u8, port: u16, encryption_key: []const u8, test_endpoints: bool, timed: bool, web_out: []const u8, web_lang: []const u8, out: std.fs.File) !void {
     const sep60 = "=" ** 60;
 
     if (!timed) writeOut(out, "Connecting to {s}:{d}...\n", .{ host, port });
@@ -878,12 +902,28 @@ fn run(allocator: mem.Allocator, host: []const u8, port: u16, encryption_key: []
             const name_copy = try allocator.dupe(u8, name);
             try entity_strings.append(allocator, name_copy);
 
+            // Extract options for Select entities (msg_type 52, protobuf field 6)
+            var options: []const []const u8 = &.{};
+            if (msg.msg_type == 52) {
+                const raw_opts = try fields.getAllStrings(6, allocator);
+                // Dupe each option string so it outlives the message buffer
+                var opt_copies = try allocator.alloc([]const u8, raw_opts.len);
+                for (raw_opts, 0..) |opt, i| {
+                    const opt_copy = try allocator.dupe(u8, opt);
+                    try entity_strings.append(allocator, opt_copy);
+                    opt_copies[i] = opt_copy;
+                }
+                allocator.free(raw_opts);
+                options = opt_copies;
+            }
+
             try entities.append(allocator, .{
                 .object_id = oid_copy,
                 .key = key,
                 .name = name_copy,
                 .entity_type = entity_type,
                 .msg_type = msg.msg_type,
+                .options = options,
             });
         }
     }
@@ -1022,11 +1062,438 @@ fn run(allocator: mem.Allocator, host: []const u8, port: u16, encryption_key: []
     // Disconnect
     conn.sendMessage(5, &.{}) catch {};
 
+    // Generate web interface if requested
+    if (web_out.len > 0 and web_lang.len > 0) {
+        const device_name = if (di_friendly_len > 0) di_friendly[0..di_friendly_len] else di_name[0..di_name_len];
+        generateWebInterface(allocator, host, device_name, entities.items, web_out, web_lang, out) catch |err| {
+            writeOut(out, "Web generation error: {any}\n", .{err});
+        };
+    }
+
     if (test_endpoints) {
         testRestEndpoints(allocator, host, entities.items, timed, out) catch |err| {
             writeOut(out, "REST test error: {any}\n", .{err});
         };
     }
+}
+
+// ========== Web Interface Generation ==========
+
+fn generateWebInterface(allocator: mem.Allocator, host: []const u8, device_name: []const u8, entities_list: []const EntityInfo, web_out: []const u8, web_lang: []const u8, out: std.fs.File) !void {
+    // Create output directory
+    std.fs.cwd().makePath(web_out) catch |err| {
+        writeOut(out, "Error creating directory '{s}': {any}\n", .{ web_out, err });
+        return;
+    };
+
+    const ext = web_lang; // "js" or "ts"
+    const is_ts = mem.eql(u8, web_lang, "ts");
+
+    // Generate and write api.js/api.ts
+    const api_code = try generateApiCode(allocator, host, web_lang);
+    defer allocator.free(api_code);
+    try writeFileToDir(web_out, if (is_ts) "api.ts" else "api.js", api_code);
+
+    // Generate and write index.html
+    const html = try generateHtml(allocator, host, device_name, entities_list);
+    defer allocator.free(html);
+    try writeFileToDir(web_out, "index.html", html);
+
+    // Generate and write package.json
+    const pkg = try generatePackageJson(allocator, device_name, is_ts);
+    defer allocator.free(pkg);
+    try writeFileToDir(web_out, "package.json", pkg);
+
+    // Generate tsconfig.json for TypeScript
+    if (is_ts) {
+        const tsconfig =
+            \\{
+            \\  "compilerOptions": {
+            \\    "target": "ES2020",
+            \\    "module": "ES2020",
+            \\    "strict": true,
+            \\    "esModuleInterop": true,
+            \\    "outDir": "./dist"
+            \\  },
+            \\  "include": ["*.ts"]
+            \\}
+            \\
+        ;
+        try writeFileToDir(web_out, "tsconfig.json", tsconfig);
+    }
+
+    // Print summary
+    const abs_path = std.fs.cwd().realpathAlloc(allocator, web_out) catch web_out;
+    defer if (abs_path.ptr != web_out.ptr) allocator.free(abs_path);
+
+    writeOut(out, "\nWeb interface generated in: {s}\n", .{abs_path});
+    writeOut(out, "  - index.html\n", .{});
+    writeOut(out, "  - api.{s}\n", .{ext});
+    writeOut(out, "  - package.json\n", .{});
+    if (is_ts) writeOut(out, "  - tsconfig.json\n", .{});
+    writeOut(out, "\nOpen index.html in a browser to use the dashboard.\n", .{});
+}
+
+fn writeFileToDir(dir_path: []const u8, filename: []const u8, content: []const u8) !void {
+    var dir = try std.fs.cwd().openDir(dir_path, .{});
+    defer dir.close();
+    var file = try dir.createFile(filename, .{});
+    defer file.close();
+    try file.writeAll(content);
+}
+
+fn generatePackageJson(allocator: mem.Allocator, device_name: []const u8, is_ts: bool) ![]u8 {
+    var buf = std.ArrayList(u8){};
+    defer buf.deinit(allocator);
+    const w = buf.writer(allocator);
+    try w.writeAll("{\n");
+    try w.print("  \"name\": \"esphome-{s}-dashboard\",\n", .{device_name});
+    try w.writeAll("  \"version\": \"1.0.0\",\n");
+    try w.writeAll("  \"description\": \"ESPHome device REST dashboard\",\n");
+    try w.writeAll("  \"scripts\": {\n");
+    if (is_ts) {
+        try w.writeAll("    \"build\": \"tsc && node -e \\\"require('fs').cpSync('index.html','dist/index.html')\\\"\",\n");
+        try w.writeAll("    \"serve\": \"npm run build && python -m http.server 8080 --directory dist\",\n");
+        try w.writeAll("    \"start\": \"npx http-server . -p 8080 -o\"\n");
+    } else {
+        try w.writeAll("    \"start\": \"npx http-server . -p 8080 -o\"\n");
+    }
+    try w.writeAll("  }\n");
+    try w.writeAll("}\n");
+    return try buf.toOwnedSlice(allocator);
+}
+
+fn generateApiCode(allocator: mem.Allocator, host: []const u8, lang: []const u8) ![]u8 {
+    var buf = std.ArrayList(u8){};
+    defer buf.deinit(allocator);
+    const w = buf.writer(allocator);
+    const is_ts = mem.eql(u8, lang, "ts");
+
+    try w.writeAll("// ESPHome REST API Client\n");
+    try w.print("// Auto-generated for device at {s}\n\n", .{host});
+    try w.print("const BASE_URL = 'http://{s}';\n\n", .{host});
+
+    // getEntity function
+    if (is_ts) {
+        try w.writeAll("async function getEntity(domain: string, id: string): Promise<any> {\n");
+    } else {
+        try w.writeAll("async function getEntity(domain, id) {\n");
+    }
+    try w.writeAll("  const resp = await fetch(`${BASE_URL}/${domain}/${id}`);\n");
+    try w.writeAll("  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);\n");
+    try w.writeAll("  return resp.json();\n");
+    try w.writeAll("}\n\n");
+
+    // postAction function
+    if (is_ts) {
+        try w.writeAll("async function postAction(domain: string, id: string, action: string): Promise<any> {\n");
+    } else {
+        try w.writeAll("async function postAction(domain, id, action) {\n");
+    }
+    try w.writeAll("  const resp = await fetch(`${BASE_URL}/${domain}/${id}/${action}`, { method: 'POST' });\n");
+    try w.writeAll("  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);\n");
+    try w.writeAll("  return resp.text();\n");
+    try w.writeAll("}\n\n");
+
+    // postValue function
+    if (is_ts) {
+        try w.writeAll("async function postValue(domain: string, id: string, action: string, key: string, value: string): Promise<any> {\n");
+    } else {
+        try w.writeAll("async function postValue(domain, id, action, key, value) {\n");
+    }
+    try w.writeAll("  const resp = await fetch(`${BASE_URL}/${domain}/${id}/${action}?${key}=${encodeURIComponent(value)}`, { method: 'POST' });\n");
+    try w.writeAll("  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);\n");
+    try w.writeAll("  return resp.text();\n");
+    try w.writeAll("}\n\n");
+
+    // postTime function
+    if (is_ts) {
+        try w.writeAll("async function postTime(domain: string, id: string, hour: number, minute: number, second: number): Promise<any> {\n");
+    } else {
+        try w.writeAll("async function postTime(domain, id, hour, minute, second) {\n");
+    }
+    try w.writeAll("  const resp = await fetch(`${BASE_URL}/${domain}/${id}/set?hour=${hour}&minute=${minute}&second=${second}`, { method: 'POST' });\n");
+    try w.writeAll("  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);\n");
+    try w.writeAll("  return resp.text();\n");
+    try w.writeAll("}\n");
+
+    return try buf.toOwnedSlice(allocator);
+}
+
+fn entityIcon(entity_type: []const u8) []const u8 {
+    if (mem.eql(u8, entity_type, "Binary Sensor")) return "\xF0\x9F\x94\xB5"; // 🔵
+    if (mem.eql(u8, entity_type, "Sensor")) return "\xF0\x9F\x93\x8A"; // 📊
+    if (mem.eql(u8, entity_type, "Switch")) return "\xF0\x9F\x94\x80"; // 🔀
+    if (mem.eql(u8, entity_type, "Button")) return "\xF0\x9F\x94\x98"; // 🔘
+    if (mem.eql(u8, entity_type, "Light")) return "\xF0\x9F\x92\xA1"; // 💡
+    if (mem.eql(u8, entity_type, "Fan")) return "\xF0\x9F\x8C\x80"; // 🌀
+    if (mem.eql(u8, entity_type, "Cover")) return "\xF0\x9F\xAA\x9F"; // 🪟
+    if (mem.eql(u8, entity_type, "Climate")) return "\xF0\x9F\x8C\xA1"; // 🌡
+    if (mem.eql(u8, entity_type, "Number")) return "\xF0\x9F\x94\xA2"; // 🔢
+    if (mem.eql(u8, entity_type, "Select")) return "\xF0\x9F\x93\x8B"; // 📋
+    if (mem.eql(u8, entity_type, "Text Sensor")) return "\xF0\x9F\x93\x9D"; // 📝
+    if (mem.eql(u8, entity_type, "Lock")) return "\xF0\x9F\x94\x92"; // 🔒
+    if (mem.eql(u8, entity_type, "Time")) return "\xE2\x8F\xB0"; // ⏰
+    if (mem.eql(u8, entity_type, "Text")) return "\xF0\x9F\x93\x84"; // 📄
+    return "\xE2\x9A\xA1"; // ⚡
+}
+
+fn htmlEscape(allocator: mem.Allocator, input: []const u8) ![]u8 {
+    var buf = std.ArrayList(u8){};
+    defer buf.deinit(allocator);
+    const w = buf.writer(allocator);
+    for (input) |c| {
+        switch (c) {
+            '&' => try w.writeAll("&amp;"),
+            '<' => try w.writeAll("&lt;"),
+            '>' => try w.writeAll("&gt;"),
+            '"' => try w.writeAll("&quot;"),
+            '\'' => try w.writeAll("&#x27;"),
+            else => try w.writeByte(c),
+        }
+    }
+    return try buf.toOwnedSlice(allocator);
+}
+
+fn jsonEscape(allocator: mem.Allocator, input: []const u8) ![]u8 {
+    var buf = std.ArrayList(u8){};
+    defer buf.deinit(allocator);
+    const w = buf.writer(allocator);
+    for (input) |c| {
+        switch (c) {
+            '"' => try w.writeAll("\\\""),
+            '\\' => try w.writeAll("\\\\"),
+            '\n' => try w.writeAll("\\n"),
+            '\r' => try w.writeAll("\\r"),
+            '\t' => try w.writeAll("\\t"),
+            else => try w.writeByte(c),
+        }
+    }
+    return try buf.toOwnedSlice(allocator);
+}
+
+fn writeEntityCardHtml(allocator: mem.Allocator, w: anytype, entity_type: []const u8, name: []const u8, object_id: []const u8, options: []const []const u8) !void {
+    const prefix = entityTypeToRestPrefix(entity_type) orelse return;
+    const icon = entityIcon(entity_type);
+    const escaped_name = try htmlEscape(allocator, name);
+    defer allocator.free(escaped_name);
+
+    try w.print("      <div class=\"card\" id=\"card-{s}-{s}\">\n", .{ prefix, object_id });
+    try w.print("        <h3>{s} {s}</h3>\n", .{ icon, escaped_name });
+    try w.print("        <div class=\"entity-type\">{s}</div>\n", .{entity_type});
+    try w.print("        <div class=\"state\" id=\"state-{s}-{s}\">--</div>\n", .{ prefix, object_id });
+
+    if (mem.eql(u8, entity_type, "Switch") or mem.eql(u8, entity_type, "Light") or mem.eql(u8, entity_type, "Fan")) {
+        try w.print("        <div class=\"actions\">\n", .{});
+        try w.print("          <button onclick=\"postAction('{s}','{s}','turn_on')\">ON</button>\n", .{ prefix, object_id });
+        try w.print("          <button onclick=\"postAction('{s}','{s}','turn_off')\">OFF</button>\n", .{ prefix, object_id });
+        try w.print("          <button onclick=\"postAction('{s}','{s}','toggle')\">Toggle</button>\n", .{ prefix, object_id });
+        try w.print("        </div>\n", .{});
+    } else if (mem.eql(u8, entity_type, "Button")) {
+        try w.print("        <div class=\"actions\">\n", .{});
+        try w.print("          <button onclick=\"postAction('{s}','{s}','press')\">Press</button>\n", .{ prefix, object_id });
+        try w.print("        </div>\n", .{});
+    } else if (mem.eql(u8, entity_type, "Cover")) {
+        try w.print("        <div class=\"actions\">\n", .{});
+        try w.print("          <button onclick=\"postAction('{s}','{s}','open')\">Open</button>\n", .{ prefix, object_id });
+        try w.print("          <button onclick=\"postAction('{s}','{s}','close')\">Close</button>\n", .{ prefix, object_id });
+        try w.print("          <button onclick=\"postAction('{s}','{s}','stop')\">Stop</button>\n", .{ prefix, object_id });
+        try w.print("        </div>\n", .{});
+    } else if (mem.eql(u8, entity_type, "Lock")) {
+        try w.print("        <div class=\"actions\">\n", .{});
+        try w.print("          <button onclick=\"postAction('{s}','{s}','lock')\">Lock</button>\n", .{ prefix, object_id });
+        try w.print("          <button onclick=\"postAction('{s}','{s}','unlock')\">Unlock</button>\n", .{ prefix, object_id });
+        try w.print("        </div>\n", .{});
+    } else if (mem.eql(u8, entity_type, "Number")) {
+        try w.print("        <div class=\"actions\">\n", .{});
+        try w.print("          <input type=\"number\" id=\"num-{s}-{s}\" style=\"width:80px\">\n", .{ prefix, object_id });
+        try w.print("          <button onclick=\"postValue('{s}','{s}','set','value',document.getElementById('num-{s}-{s}').value)\">Set</button>\n", .{ prefix, object_id, prefix, object_id });
+        try w.print("        </div>\n", .{});
+    } else if (mem.eql(u8, entity_type, "Select")) {
+        try w.print("        <div class=\"actions\">\n", .{});
+        try w.print("          <select id=\"sel-{s}-{s}\" style=\"width:140px;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;padding:4px 8px;border-radius:4px;font-size:0.85em\">\n", .{ prefix, object_id });
+        for (options) |opt| {
+            const escaped_opt = try htmlEscape(allocator, opt);
+            defer allocator.free(escaped_opt);
+            try w.print("            <option value=\"{s}\">{s}</option>\n", .{ escaped_opt, escaped_opt });
+        }
+        try w.print("          </select>\n", .{});
+        try w.print("          <button onclick=\"postValue('{s}','{s}','set','option',document.getElementById('sel-{s}-{s}').value)\">Set</button>\n", .{ prefix, object_id, prefix, object_id });
+        try w.print("        </div>\n", .{});
+    } else if (mem.eql(u8, entity_type, "Text")) {
+        try w.print("        <div class=\"actions\">\n", .{});
+        try w.print("          <input type=\"text\" id=\"txt-{s}-{s}\" placeholder=\"value\" style=\"width:120px\">\n", .{ prefix, object_id });
+        try w.print("          <button onclick=\"postValue('{s}','{s}','set','value',document.getElementById('txt-{s}-{s}').value)\">Set</button>\n", .{ prefix, object_id, prefix, object_id });
+        try w.print("        </div>\n", .{});
+    } else if (mem.eql(u8, entity_type, "Time")) {
+        try w.print("        <div class=\"actions\">\n", .{});
+        try w.print("          <input type=\"time\" id=\"time-{s}-{s}\" step=\"1\">\n", .{ prefix, object_id });
+        try w.print("          <button onclick=\"(function(){{ var t=document.getElementById('time-{s}-{s}').value.split(':'); postTime('{s}','{s}',t[0],t[1],t[2]||0); }})()\">Set</button>\n", .{ prefix, object_id, prefix, object_id });
+        try w.print("        </div>\n", .{});
+    }
+
+    try w.print("      </div>\n", .{});
+}
+
+fn generateEntitiesJson(allocator: mem.Allocator, entities_list: []const EntityInfo) ![]u8 {
+    var buf = std.ArrayList(u8){};
+    defer buf.deinit(allocator);
+    const w = buf.writer(allocator);
+    try w.writeAll("[");
+    var first = true;
+    for (entities_list) |e| {
+        const prefix = entityTypeToRestPrefix(e.entity_type) orelse continue;
+        if (!first) try w.writeAll(",");
+        first = false;
+        const ename = try jsonEscape(allocator, e.name);
+        defer allocator.free(ename);
+        const eoid = try jsonEscape(allocator, e.object_id);
+        defer allocator.free(eoid);
+        try w.print("{{\"domain\":\"{s}\",\"id\":\"{s}\",\"name\":\"{s}\",\"type\":\"{s}\"", .{ prefix, eoid, ename, e.entity_type });
+        if (mem.eql(u8, e.entity_type, "Select") and e.options.len > 0) {
+            try w.writeAll(",\"options\":[");
+            for (e.options, 0..) |opt, i| {
+                if (i > 0) try w.writeAll(",");
+                const eopt = try jsonEscape(allocator, opt);
+                defer allocator.free(eopt);
+                try w.print("\"{s}\"", .{eopt});
+            }
+            try w.writeAll("]");
+        }
+        try w.writeAll("}");
+    }
+    try w.writeAll("]");
+    return try buf.toOwnedSlice(allocator);
+}
+
+fn generateHtml(allocator: mem.Allocator, host: []const u8, device_name: []const u8, entities_list: []const EntityInfo) ![]u8 {
+    var buf = std.ArrayList(u8){};
+    defer buf.deinit(allocator);
+    const w = buf.writer(allocator);
+
+    const escaped_device = try htmlEscape(allocator, device_name);
+    defer allocator.free(escaped_device);
+
+    const entities_json = try generateEntitiesJson(allocator, entities_list);
+    defer allocator.free(entities_json);
+
+    try w.writeAll("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n");
+    try w.writeAll("  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n");
+    try w.print("  <title>{s} - ESPHome Dashboard</title>\n", .{escaped_device});
+    try w.writeAll("  <style>\n");
+    try w.writeAll(
+        \\    * { margin: 0; padding: 0; box-sizing: border-box; }
+        \\    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; padding: 20px; }
+        \\    h1 { color: #58a6ff; margin-bottom: 8px; }
+        \\    .subtitle { color: #8b949e; margin-bottom: 20px; }
+        \\    .toolbar { margin-bottom: 20px; display: flex; gap: 10px; align-items: center; }
+        \\    .toolbar button { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; padding: 6px 16px; border-radius: 6px; cursor: pointer; }
+        \\    .toolbar button:hover { background: #30363d; }
+        \\    .toolbar button.active { background: #1f6feb; border-color: #1f6feb; }
+        \\    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+        \\    .section-title { grid-column: 1 / -1; color: #58a6ff; font-size: 1.3em; margin-top: 16px; border-bottom: 1px solid #21262d; padding-bottom: 8px; }
+        \\    .card { background: #161b22; border: 1px solid #21262d; border-radius: 8px; padding: 16px; }
+        \\    .card h3 { color: #f0f6fc; margin-bottom: 4px; font-size: 0.95em; }
+        \\    .entity-type { color: #8b949e; font-size: 0.8em; margin-bottom: 8px; }
+        \\    .state { font-size: 1.2em; font-weight: 600; margin-bottom: 8px; color: #7ee787; min-height: 1.4em; }
+        \\    .actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        \\    .actions button { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85em; }
+        \\    .actions button:hover { background: #30363d; }
+        \\    .actions input, .actions select { background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; padding: 4px 8px; border-radius: 4px; font-size: 0.85em; }
+        \\
+    );
+    try w.writeAll("  </style>\n</head>\n<body>\n");
+    try w.print("  <h1>\xE2\x9A\xA1 {s}</h1>\n", .{escaped_device});
+    try w.print("  <div class=\"subtitle\">ESPHome REST Dashboard &mdash; {s}</div>\n", .{host});
+    try w.writeAll("  <div class=\"toolbar\">\n");
+    try w.writeAll("    <button id=\"refresh-btn\" onclick=\"refreshAll()\">Refresh All</button>\n");
+    try w.writeAll("    <button id=\"auto-btn\" onclick=\"toggleAuto()\">Auto-Refresh: OFF</button>\n");
+    try w.writeAll("  </div>\n");
+    try w.writeAll("  <div class=\"grid\">\n");
+
+    // Group entities by type using group_order
+    for (group_order) |group_name| {
+        const prefix = entityTypeToRestPrefix(group_name) orelse continue;
+        _ = prefix;
+
+        // Count entities in this group
+        var count: usize = 0;
+        for (entities_list) |e| {
+            if (mem.eql(u8, group_order[getGroupIndex(e.entity_type)], group_name) and entityTypeToRestPrefix(e.entity_type) != null)
+                count += 1;
+        }
+        if (count == 0) continue;
+
+        try w.print("    <div class=\"section-title\">{s} ({d})</div>\n", .{ group_name, count });
+
+        // Sort by name - collect indices
+        var indices = std.ArrayList(usize){};
+        defer indices.deinit(allocator);
+
+        for (entities_list, 0..) |e, idx| {
+            if (mem.eql(u8, group_order[getGroupIndex(e.entity_type)], group_name) and entityTypeToRestPrefix(e.entity_type) != null)
+                try indices.append(allocator, idx);
+        }
+
+        const ctx = SortCtx{ .items = entities_list };
+        mem.sort(usize, indices.items, ctx, lessThanByName);
+
+        for (indices.items) |idx| {
+            const e = entities_list[idx];
+            try writeEntityCardHtml(allocator, w, e.entity_type, e.name, e.object_id, e.options);
+        }
+    }
+
+    try w.writeAll("  </div>\n\n");
+
+    // Inline JavaScript
+    try w.writeAll("  <script src=\"api.js\"></script>\n");
+    try w.writeAll("  <script>\n");
+    try w.print("    const ENTITIES = {s};\n", .{entities_json});
+    try w.writeAll(
+        \\    let autoRefresh = null;
+        \\
+        \\    async function refreshAll() {
+        \\      for (const e of ENTITIES) {
+        \\        try {
+        \\          const data = await getEntity(e.domain, e.id);
+        \\          const el = document.getElementById(`state-${e.domain}-${e.id}`);
+        \\          if (el) {
+        \\            const val = data.value !== undefined ? data.value : data.state !== undefined ? data.state : JSON.stringify(data);
+        \\            el.textContent = val;
+        \\            if (e.type === 'Select') {
+        \\              const sel = document.getElementById(`sel-${e.domain}-${e.id}`);
+        \\              if (sel) sel.value = val;
+        \\            }
+        \\          }
+        \\        } catch(err) {
+        \\          const el = document.getElementById(`state-${e.domain}-${e.id}`);
+        \\          if (el) el.textContent = 'Error';
+        \\        }
+        \\      }
+        \\    }
+        \\
+        \\    function toggleAuto() {
+        \\      const btn = document.getElementById('auto-btn');
+        \\      if (autoRefresh) {
+        \\        clearInterval(autoRefresh);
+        \\        autoRefresh = null;
+        \\        btn.textContent = 'Auto-Refresh: OFF';
+        \\        btn.classList.remove('active');
+        \\      } else {
+        \\        refreshAll();
+        \\        autoRefresh = setInterval(refreshAll, 5000);
+        \\        btn.textContent = 'Auto-Refresh: ON';
+        \\        btn.classList.add('active');
+        \\      }
+        \\    }
+        \\
+        \\    refreshAll();
+        \\
+    );
+    try w.writeAll("  </script>\n</body>\n</html>\n");
+
+    return try buf.toOwnedSlice(allocator);
 }
 
 fn handleInternalMessage(conn: *NoiseConnection, msg_type: u16, proto_buf: []u8) !void {

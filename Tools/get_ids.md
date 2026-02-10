@@ -10,6 +10,7 @@ A Python tool for connecting to ESPHome devices to retrieve device information, 
 - Generate REST API endpoint documentation
 - Test all GET endpoints with live responses
 - Support for encrypted connections
+- Generate interactive web dashboards (JavaScript or TypeScript)
 
 ## Requirements
 
@@ -33,7 +34,7 @@ pip install aioesphomeapi aiohttp
 ### Basic Usage
 
 ```bash
-python get_ids.py <host> [encryption_key] [password] [port] [--test] [--time]
+python get_ids.py <host> [encryption_key] [password] [port] [--test] [--time] [--js <dir>] [--ts <dir>]
 ```
 
 ### Examples
@@ -68,6 +69,16 @@ python get_ids.py 192.168.1.100 "<your-encryption-key>" "" 6053 --time
 python get_ids.py 192.168.1.100 "<your-encryption-key>" "" 6053 --time --test
 ```
 
+**Generate a JavaScript web dashboard:**
+```bash
+python get_ids.py 192.168.1.100 "<your-encryption-key>" --js ./dashboard
+```
+
+**Generate a TypeScript web dashboard:**
+```bash
+python get_ids.py 192.168.1.100 "<your-encryption-key>" --ts ./dashboard
+```
+
 ## Parameters
 
 - `host` - IP address or hostname of the ESPHome device (required)
@@ -76,6 +87,8 @@ python get_ids.py 192.168.1.100 "<your-encryption-key>" "" 6053 --time --test
 - `port` - API port (optional, default: 6053)
 - `--test` - Flag to test all GET endpoints after listing (optional)
 - `--time` - Flag to time the entire execution and display only summary output (optional)
+- `--js <dir>` - Generate a JavaScript web dashboard in the specified directory (optional)
+- `--ts <dir>` - Generate a TypeScript web dashboard in the specified directory (optional)
 
 ## Output
 
@@ -184,6 +197,48 @@ Successful:    87 ✓
 Failed:        0 ✗
 ============================================================
 ```
+
+## Web Dashboard Generation
+
+Use `--js` or `--ts` to generate a self-contained interactive web dashboard for controlling your ESPHome device via its REST API.
+
+### JavaScript Output (`--js <dir>`)
+
+Generates a ready-to-use dashboard:
+- `index.html` — Interactive dashboard with auto-refresh
+- `api.js` — REST API client functions
+- `package.json` — With `npm start` to serve via http-server
+
+Open `index.html` directly in a browser, or:
+```bash
+cd <dir>
+npm start
+```
+
+### TypeScript Output (`--ts <dir>`)
+
+Generates a TypeScript-based dashboard:
+- `index.html` — Interactive dashboard (references compiled `api.js`)
+- `api.ts` — Typed REST API client
+- `tsconfig.json` — TypeScript configuration (outputs to `dist/`)
+- `package.json` — With `npm run build` and `npm run serve`
+
+To build and serve:
+```bash
+cd <dir>
+npm install -g typescript
+npm run build    # Compiles api.ts → dist/api.js, copies index.html to dist/
+npm run serve    # Builds and serves from dist/ on port 8080
+```
+
+### Dashboard Features
+
+- **Grouped by entity type** — Binary Sensors, Sensors, Switches, Buttons, Numbers, Selects, etc.
+- **Live state display** — Shows current values for all entities
+- **Interactive controls** — Toggle switches, press buttons, set numbers, select options, set times
+- **Select dropdowns** — Populated with all available options from the device, automatically synced to current value
+- **Auto-refresh** — Toggle automatic polling every 5 seconds
+- **Dark theme** — GitHub-inspired dark UI
 
 ## Supported Entity Types
 

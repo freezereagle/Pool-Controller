@@ -9,6 +9,7 @@ High-performance Rust implementation of the ESPHome Entity ID Retriever, using n
 - Complete Noise protocol encryption support
 - Identical functionality to Python and Zig implementations
 - Detailed error handling and reporting
+- Generate interactive web dashboards (JavaScript or TypeScript)
 
 ## Building
 
@@ -31,7 +32,7 @@ The compiled binary will be at: `target/release/get_ids.exe` (Windows) or `targe
 ### Basic Usage
 
 ```bash
-./target/release/get_ids <host> [encryption_key] [password] [port] [--test] [--time]
+./target/release/get_ids <host> [encryption_key] [password] [port] [--test] [--time] [--js <dir>] [--ts <dir>]
 ```
 
 ### Examples
@@ -56,6 +57,16 @@ The compiled binary will be at: `target/release/get_ids.exe` (Windows) or `targe
 ./target/release/get_ids 192.168.68.79 "xcT/ahb5GdXPpbOb0irwnhUXPFD5H5JQPf6D+rmaUUI=" --time --test
 ```
 
+**Generate a JavaScript web dashboard:**
+```bash
+./target/release/get_ids 192.168.68.79 "xcT/ahb5GdXPpbOb0irwnhUXPFD5H5JQPf6D+rmaUUI=" --js ./dashboard
+```
+
+**Generate a TypeScript web dashboard:**
+```bash
+./target/release/get_ids 192.168.68.79 "xcT/ahb5GdXPpbOb0irwnhUXPFD5H5JQPf6D+rmaUUI=" --ts ./dashboard
+```
+
 ## Parameters
 
 - `host` - IP address or hostname of the ESPHome device (required)
@@ -64,6 +75,8 @@ The compiled binary will be at: `target/release/get_ids.exe` (Windows) or `targe
 - `port` - API port (optional, default: 6053)
 - `--test` - Test all GET endpoints and display responses
 - `--time` - Time execution and display only summary output
+- `--js <dir>` - Generate a JavaScript web dashboard in the specified directory
+- `--ts <dir>` - Generate a TypeScript web dashboard in the specified directory
 
 ## Performance
 
@@ -120,12 +133,48 @@ Failed:        0 ✗
 Execution Time: 11.273s
 ```
 
+## Web Dashboard Generation
+
+Use `--js` or `--ts` to generate a self-contained interactive web dashboard.
+
+### JavaScript Output (`--js <dir>`)
+
+Generates:
+- `index.html` — Interactive dashboard with auto-refresh
+- `api.js` — REST API client functions
+- `package.json` — With `npm start` to serve via http-server
+
+### TypeScript Output (`--ts <dir>`)
+
+Generates:
+- `index.html` — Dashboard (references compiled `api.js`)
+- `api.ts` — Typed REST API client
+- `tsconfig.json` — TypeScript config (outputs to `dist/`)
+- `package.json` — With `npm run build` and `npm run serve`
+
+To build and serve the TypeScript version:
+```bash
+cd <dir>
+npm install -g typescript
+npm run build    # Compiles api.ts → dist/api.js, copies index.html to dist/
+npm run serve    # Builds and serves from dist/ on port 8080
+```
+
+### Dashboard Features
+
+- Grouped by entity type with live state display
+- Interactive controls (toggle, press, set values, select options, set times)
+- Select dropdowns populated with available options and synced to current value
+- Auto-refresh toggle (5-second interval)
+- Dark theme UI
+
 ## Source Files
 
 - `src/main.rs` - Main application logic, argument parsing, timing
 - `src/noise_connection.rs` - Noise protocol implementation
 - `src/protobuf.rs` - Protobuf message encoding/decoding
 - `src/entities.rs` - Entity parsing and REST endpoint generation
+- `src/web_gen.rs` - Web dashboard HTML/JS/TS generation
 
 ## Troubleshooting
 
